@@ -1,0 +1,21 @@
+# Build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+.vs/
+.vscode/
+.idea/
+
+# Test results
+TestResults/
+*.trx
+coverage*/
+
+# SQLite databases (the app stores its own in %LOCALAPPDATA%\TransportOrders)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
