@@ -9,6 +9,22 @@ The single window lists all orders in a read-only grid, filters them by status a
 with **Start**, **Complete** and **Cancel**. Every change is saved to SQLite immediately.
 The status bar shows the total and per-status counts of all stored orders, independent of the filter.
 
+![Main window](docs/screenshot.png)
+
+## Using the window
+
+- **Filter** by status with the segmented control and **search** by order number (case-insensitive); both combine.
+- Select an order: the hint line tells you which actions its status allows, and only those buttons are enabled.
+- **Cancel** asks for confirmation. When nothing matches, a *Clear filters* button resets filter and search.
+- A save or load error shows a message; after a failed save the list is reloaded from the database.
+
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl+F` | Focus the search box |
+| `Esc` (in search) | Clear the search |
+| `F5` | Reload orders from the database |
+| `Alt+S` / `Alt+C` / `Alt+N` | Start / Complete / Cancel the selected order |
+
 ## Technologies
 
 .NET 8, C#, WPF, CommunityToolkit.Mvvm, Entity Framework Core 8 with SQLite,

@@ -12,6 +12,13 @@ public sealed partial class MainViewModel : ObservableObject
 {
     public const string AllStatuses = "All";
 
+    private static readonly (string Action, OrderStatus Target)[] Actions =
+    [
+        ("Start", OrderStatus.InTransit),
+        ("Complete", OrderStatus.Done),
+        ("Cancel", OrderStatus.Cancelled),
+    ];
+
     private readonly IOrderRepository _repository;
     private readonly IUserMessageService _messages;
     private readonly ObservableCollection<OrderRowViewModel> _orders = [];
@@ -29,9 +36,12 @@ public sealed partial class MainViewModel : ObservableObject
     public IReadOnlyList<string> StatusFilters { get; } = [AllStatuses, .. Enum.GetNames<OrderStatus>()];
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ClearFiltersCommand))]
     private string _selectedStatusFilter = AllStatuses;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ClearSearchCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ClearFiltersCommand))]
     private string _searchText = string.Empty;
 
     [ObservableProperty]
@@ -44,10 +54,20 @@ public sealed partial class MainViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(StartOrderCommand))]
     [NotifyCanExecuteChangedFor(nameof(CompleteOrderCommand))]
     [NotifyCanExecuteChangedFor(nameof(CancelOrderCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ReloadCommand))]
     private bool _isBusy;
 
     [ObservableProperty]
+    private string _busyMessage = string.Empty;
+
+    [ObservableProperty]
+    private string _selectionHint = DescribeSelection(null);
+
+    [ObservableProperty]
     private string _lastAction = string.Empty;
+
+    [ObservableProperty]
+    private bool _isEmptyResult;
 
     [ObservableProperty]
     private int _visibleCount;
@@ -70,7 +90,7 @@ public sealed partial class MainViewModel : ObservableObject
     public async Task LoadAsync()
     {
         var selectedId = SelectedOrder?.Order.Id;
-        IsBusy = true;
+        SetBusy("Loading orders…");
         try
         {
             var orders = await Task.Run(() => _repository.GetAllAsync());
@@ -89,9 +109,28 @@ public sealed partial class MainViewModel : ObservableObject
         }
         finally
         {
-            IsBusy = false;
+            ClearBusy();
         }
     }
+
+    [RelayCommand(CanExecute = nameof(CanReload))]
+    private Task ReloadAsync() => LoadAsync();
+
+    private bool CanReload() => !IsBusy;
+
+    [RelayCommand(CanExecute = nameof(CanClearSearch))]
+    private void ClearSearch() => SearchText = string.Empty;
+
+    private bool CanClearSearch() => SearchText.Length > 0;
+
+    [RelayCommand(CanExecute = nameof(CanClearFilters))]
+    private void ClearFilters()
+    {
+        SearchText = string.Empty;
+        SelectedStatusFilter = AllStatuses;
+    }
+
+    private bool CanClearFilters() => SearchText.Length > 0 || SelectedStatusFilter != AllStatuses;
 
     [RelayCommand(CanExecute = nameof(CanStartOrder))]
     private Task StartOrderAsync() => ChangeStatusAsync(OrderStatus.InTransit);
@@ -136,14 +175,14 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         }
 
-        IsBusy = true;
+        SetBusy($"Saving {row.OrderNumber}…");
         try
         {
             await Task.Run(() => _repository.SaveAsync(row.Order));
         }
         catch (Exception ex)
         {
-            IsBusy = false;
+            ClearBusy();
             _messages.ShowError(
                 $"The change to order {row.OrderNumber} could not be saved and has been discarded.\n\n{ex.GetBaseException().Message}");
 
@@ -152,15 +191,29 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         }
 
-        IsBusy = false;
+        ClearBusy();
         row.Refresh();
-        LastAction = $"Last change: {row.OrderNumber} {previous} → {target}";
+        LastAction = $"{row.OrderNumber}: {previous} → {target}";
         RefreshList(row);
     }
 
     partial void OnSelectedStatusFilterChanged(string value) => RefreshList(SelectedOrder);
 
     partial void OnSearchTextChanged(string value) => RefreshList(SelectedOrder);
+
+    partial void OnSelectedOrderChanged(OrderRowViewModel? value) => SelectionHint = DescribeSelection(value);
+
+    private void SetBusy(string message)
+    {
+        BusyMessage = message;
+        IsBusy = true;
+    }
+
+    private void ClearBusy()
+    {
+        IsBusy = false;
+        BusyMessage = string.Empty;
+    }
 
     private bool IsVisible(OrderRowViewModel row)
     {
@@ -169,6 +222,20 @@ public sealed partial class MainViewModel : ObservableObject
         var searchMatches = string.IsNullOrWhiteSpace(SearchText)
             || row.OrderNumber.Contains(SearchText.Trim(), StringComparison.OrdinalIgnoreCase);
         return statusMatches && searchMatches;
+    }
+
+    /// <summary>Explains which actions the selected order allows, based on the domain rules.</summary>
+    private static string DescribeSelection(OrderRowViewModel? row)
+    {
+        if (row is null)
+        {
+            return "Select an order to change its status.";
+        }
+
+        var allowed = Actions.Where(a => row.Order.CanTransitionTo(a.Target)).Select(a => a.Action).ToList();
+        return allowed.Count == 0
+            ? $"{row.OrderNumber} is {row.Status}. This is a final status: no further change is possible."
+            : $"{row.OrderNumber} is {row.Status}. You can {string.Join(" or ", allowed)} it.";
     }
 
     /// <summary>
@@ -186,8 +253,10 @@ public sealed partial class MainViewModel : ObservableObject
         InTransitCount = _orders.Count(r => r.Status == OrderStatus.InTransit);
         DoneCount = _orders.Count(r => r.Status == OrderStatus.Done);
         CancelledCount = _orders.Count(r => r.Status == OrderStatus.Cancelled);
+        IsEmptyResult = TotalCount > 0 && VisibleCount == 0;
 
         // The selected row may have changed status without the selection itself changing.
+        SelectionHint = DescribeSelection(SelectedOrder);
         StartOrderCommand.NotifyCanExecuteChanged();
         CompleteOrderCommand.NotifyCanExecuteChanged();
         CancelOrderCommand.NotifyCanExecuteChanged();
