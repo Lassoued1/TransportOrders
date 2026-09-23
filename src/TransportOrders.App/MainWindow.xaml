@@ -4,10 +4,11 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:TransportOrders.App.ViewModels"
+        xmlns:svc="clr-namespace:TransportOrders.App.Services"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
-        Title="Transport Orders — Extrusion Plant"
-        Width="1180" Height="680" MinWidth="940" MinHeight="460"
+        Title="{svc:Tr Window_Title}"
+        Width="1360" Height="760" MinWidth="1100" MinHeight="520"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource WindowBrush}"
         Foreground="{StaticResource TextBrush}"
@@ -21,11 +22,11 @@
     </Window.InputBindings>
 
     <Window.Resources>
-        <!-- Coloured pill showing an order status -->
+        <!-- Coloured pill showing an order status; the DataContext is an OrderRowViewModel -->
         <DataTemplate x:Key="StatusBadge">
             <Border x:Name="Badge" CornerRadius="10" Padding="9,2" HorizontalAlignment="Left"
                     Background="{StaticResource PlannedSoftBrush}">
-                <TextBlock x:Name="Label" Text="{Binding Status}" FontSize="12" FontWeight="SemiBold"
+                <TextBlock x:Name="Label" Text="{Binding StatusText}" FontSize="12" FontWeight="SemiBold"
                            Foreground="{StaticResource PlannedBrush}" />
             </Border>
             <DataTemplate.Triggers>
@@ -44,10 +45,49 @@
             </DataTemplate.Triggers>
         </DataTemplate>
 
+        <!-- Compact red flag in the grid for urgent orders -->
+        <DataTemplate x:Key="PriorityFlag">
+            <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE7C1;" FontSize="14" Foreground="{StaticResource DangerBrush}"
+                       ToolTip="{Binding PriorityText}" AutomationProperties.Name="{Binding PriorityText}"
+                       Visibility="{Binding IsUrgent, Converter={StaticResource BoolToVisibility}}" />
+        </DataTemplate>
+
+        <!-- Red "Urgent" pill in the details panel, shown only for urgent orders -->
+        <DataTemplate x:Key="PriorityBadge">
+            <Border CornerRadius="10" Padding="9,2" HorizontalAlignment="Left" Background="{StaticResource UrgentSoftBrush}">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsUrgent}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <TextBlock Text="{Binding PriorityText}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource DangerBrush}" />
+            </Border>
+        </DataTemplate>
+
+        <!-- Due time, red with a warning icon once an open order is overdue -->
+        <DataTemplate x:Key="DueCell">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock x:Name="Icon" FontFamily="{StaticResource IconFont}" Text="&#xE7BA;" Margin="0,1,5,0"
+                           Foreground="{StaticResource DangerBrush}" Visibility="Collapsed" />
+                <TextBlock x:Name="Due" Text="{Binding DueText}" ToolTip="{Binding DueTextLong}" />
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsOverdue}" Value="True">
+                    <Setter TargetName="Icon" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="Due" Property="Foreground" Value="{StaticResource DangerBrush}" />
+                    <Setter TargetName="Due" Property="FontWeight" Value="SemiBold" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
         <Style x:Key="RightAligned" TargetType="TextBlock">
             <Setter Property="HorizontalAlignment" Value="Right" />
         </Style>
-
         <Style x:Key="Counter" TargetType="StackPanel">
             <Setter Property="Orientation" Value="Horizontal" />
             <Setter Property="Margin" Value="0,0,16,0" />
@@ -58,24 +98,100 @@
             <Setter Property="Margin" Value="0,0,6,0" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+            <Setter Property="Margin" Value="0,0,12,6" />
+        </Style>
+        <Style x:Key="FieldValue" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,0,0,6" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="KpiValue" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="17" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style x:Key="KpiLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+        <Style x:Key="Placeholder" TargetType="TextBlock">
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Setter Property="Foreground" Value="#98A2B0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="3,0,0,0" />
+        </Style>
     </Window.Resources>
 
     <DockPanel>
-        <!-- Header -->
+        <!-- Header: title, barcode scan, language, reload -->
         <Border DockPanel.Dock="Top" Background="{StaticResource SurfaceBrush}"
-                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="20,14">
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="20,12">
             <DockPanel>
-                <Button DockPanel.Dock="Right" Command="{Binding ReloadCommand}" VerticalAlignment="Center"
-                        ToolTip="Reload all orders from the database (F5)" AutomationProperties.Name="Reload">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE72C;" Margin="0,1,8,0" />
-                        <TextBlock Text="Reload" />
-                    </StackPanel>
-                </Button>
-                <StackPanel>
-                    <TextBlock Text="Transport Orders" FontSize="20" FontWeight="SemiBold" />
-                    <TextBlock Text="Internal material transport · aluminium extrusion plant"
-                               Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" />
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="230" Height="32" CornerRadius="6" BorderThickness="1" Margin="0,0,12,0"
+                            Background="{StaticResource SurfaceBrush}" ToolTip="{svc:Tr Scan_Tip}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+                                <Style.Triggers>
+                                    <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xED14;" Margin="10,0,6,0"
+                                       Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{svc:Tr Scan_Placeholder}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource Placeholder}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ScanText}" Value="">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBox Grid.Column="1" BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center"
+                                     Text="{Binding ScanText, UpdateSourceTrigger=PropertyChanged}"
+                                     AutomationProperties.Name="Scan barcode">
+                                <TextBox.InputBindings>
+                                    <KeyBinding Key="Enter" Command="{Binding ScanCommand}" />
+                                </TextBox.InputBindings>
+                            </TextBox>
+                        </Grid>
+                    </Border>
+                    <ListBox Style="{StaticResource SegmentedList}" Margin="0,0,12,0"
+                             ItemsSource="{Binding Languages}"
+                             DisplayMemberPath="Label" SelectedValuePath="Key"
+                             SelectedValue="{Binding SelectedLanguage}"
+                             ToolTip="{svc:Tr Language_Tip}"
+                             AutomationProperties.Name="Language" />
+                    <Button Command="{Binding ReloadCommand}" ToolTip="{svc:Tr Action_Reload_Tip}"
+                            AutomationProperties.Name="Reload">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE72C;" Margin="0,1,8,0" />
+                            <TextBlock Text="{svc:Tr Action_Reload}" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{svc:Tr App_Title}" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Text="{svc:Tr App_Subtitle}" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" />
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -85,92 +201,85 @@
                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="14,4">
             <StatusBar.ItemsPanel>
                 <ItemsPanelTemplate>
-                    <DockPanel LastChildFill="False" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                    </Grid>
                 </ItemsPanelTemplate>
             </StatusBar.ItemsPanel>
-            <StatusBarItem DockPanel.Dock="Left">
+            <StatusBarItem Grid.Column="0" ToolTip="{svc:Tr Counts_Tip}">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock FontWeight="SemiBold" Margin="0,0,18,0"
-                               Text="{Binding TotalCount, StringFormat='All orders: {0}'}" />
+                    <TextBlock FontWeight="SemiBold" Margin="0,0,18,0">
+                        <Run Text="{svc:Tr Count_All}" /><Run Text=": " /><Run Text="{Binding TotalCount, Mode=OneWay}" />
+                    </TextBlock>
                     <StackPanel Style="{StaticResource Counter}">
                         <Ellipse Style="{StaticResource Dot}" Fill="{StaticResource PlannedBrush}" />
-                        <TextBlock Text="{Binding PlannedCount, StringFormat='Planned: {0}'}" />
+                        <TextBlock><Run Text="{svc:Tr Status_Planned}" /><Run Text=": " /><Run Text="{Binding PlannedCount, Mode=OneWay}" /></TextBlock>
                     </StackPanel>
                     <StackPanel Style="{StaticResource Counter}">
                         <Ellipse Style="{StaticResource Dot}" Fill="#D08A12" />
-                        <TextBlock Text="{Binding InTransitCount, StringFormat='InTransit: {0}'}" />
+                        <TextBlock><Run Text="{svc:Tr Status_InTransit}" /><Run Text=": " /><Run Text="{Binding InTransitCount, Mode=OneWay}" /></TextBlock>
                     </StackPanel>
                     <StackPanel Style="{StaticResource Counter}">
                         <Ellipse Style="{StaticResource Dot}" Fill="{StaticResource DoneBrush}" />
-                        <TextBlock Text="{Binding DoneCount, StringFormat='Done: {0}'}" />
+                        <TextBlock><Run Text="{svc:Tr Status_Done}" /><Run Text=": " /><Run Text="{Binding DoneCount, Mode=OneWay}" /></TextBlock>
                     </StackPanel>
                     <StackPanel Style="{StaticResource Counter}">
                         <Ellipse Style="{StaticResource Dot}" Fill="{StaticResource CancelledBrush}" />
-                        <TextBlock Text="{Binding CancelledCount, StringFormat='Cancelled: {0}'}" />
+                        <TextBlock><Run Text="{svc:Tr Status_Cancelled}" /><Run Text=": " /><Run Text="{Binding CancelledCount, Mode=OneWay}" /></TextBlock>
                     </StackPanel>
-                    <TextBlock Foreground="{StaticResource MutedTextBrush}" Text="(all stored orders, ignoring filter and search)" />
                 </StackPanel>
             </StatusBarItem>
-            <StatusBarItem DockPanel.Dock="Right">
-                <StackPanel Orientation="Horizontal">
-                    <StackPanel Orientation="Horizontal" Margin="0,0,18,0"
+            <!-- Right part shrinks (with ellipsis) instead of pushing "Shown" out of the window -->
+            <StatusBarItem Grid.Column="1" HorizontalContentAlignment="Stretch">
+                <DockPanel LastChildFill="True">
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding ShownText}" Margin="18,0,0,0" />
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="18,0,0,0"
                                 Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}">
                         <ProgressBar IsIndeterminate="True" Width="70" Height="4" Margin="0,0,8,0"
                                      Foreground="{StaticResource AccentBrush}" BorderThickness="0" />
                         <TextBlock Text="{Binding BusyMessage}" Foreground="{StaticResource MutedTextBrush}" />
                     </StackPanel>
-                    <TextBlock Foreground="{StaticResource DoneBrush}" Margin="0,0,18,0" Text="{Binding LastAction}">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding LastAction}" Value="">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                    <TextBlock>
-                        <TextBlock.Text>
-                            <MultiBinding StringFormat="Shown: {0} of {1}">
-                                <Binding Path="VisibleCount" />
-                                <Binding Path="TotalCount" />
-                            </MultiBinding>
-                        </TextBlock.Text>
-                    </TextBlock>
-                </StackPanel>
+                    <TextBlock Text="{Binding LastAction}" Foreground="{StaticResource DoneBrush}"
+                               TextTrimming="CharacterEllipsis" TextAlignment="Right" />
+                </DockPanel>
             </StatusBarItem>
         </StatusBar>
 
-        <Grid Margin="20,16,20,14">
+        <Grid Margin="20,14,20,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="14" />
+                <ColumnDefinition Width="280" />
+            </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <!-- Toolbar: status filter, search and actions -->
-            <DockPanel Grid.Row="0">
+            <!-- Toolbar: status filter, search, heat filter, actions -->
+            <DockPanel Grid.Row="0" Grid.ColumnSpan="3">
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="_Start" Style="{StaticResource PrimaryButton}" Margin="8,0,0,0"
-                            Command="{Binding StartOrderCommand}"
-                            ToolTip="Planned → InTransit (Alt+S)" />
-                    <Button Content="_Complete" Style="{StaticResource PrimaryButton}" Margin="8,0,0,0"
-                            Command="{Binding CompleteOrderCommand}"
-                            ToolTip="InTransit → Done (Alt+C)" />
-                    <Button Content="Ca_ncel" Style="{StaticResource DangerButton}" Margin="8,0,0,0"
-                            Command="{Binding CancelOrderCommand}"
-                            ToolTip="Planned or InTransit → Cancelled (Alt+N)" />
+                    <Button Content="{svc:Tr Action_Start}" Style="{StaticResource PrimaryButton}" Margin="8,0,0,0"
+                            Command="{Binding StartOrderCommand}" ToolTip="{svc:Tr Action_Start_Tip}" />
+                    <Button Content="{svc:Tr Action_Complete}" Style="{StaticResource PrimaryButton}" Margin="8,0,0,0"
+                            Command="{Binding CompleteOrderCommand}" ToolTip="{svc:Tr Action_Complete_Tip}" />
+                    <Button Content="{svc:Tr Action_Cancel}" Style="{StaticResource DangerButton}" Margin="8,0,0,0"
+                            Command="{Binding CancelOrderCommand}" ToolTip="{svc:Tr Action_Cancel_Tip}" />
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <ListBox Style="{StaticResource SegmentedList}"
                              ItemsSource="{Binding StatusFilters}"
-                             SelectedItem="{Binding SelectedStatusFilter}"
+                             DisplayMemberPath="Label" SelectedValuePath="Key"
+                             SelectedValue="{Binding SelectedStatusFilter}"
                              AutomationProperties.Name="Status filter" />
 
                     <!-- Search box with icon, placeholder and clear button -->
-                    <Border Margin="14,0,0,0" Width="250" Height="32" CornerRadius="6"
+                    <Border Margin="12,0,0,0" Width="240" Height="32" CornerRadius="6"
                             Background="{StaticResource SurfaceBrush}" BorderThickness="1">
                         <Border.Style>
                             <Style TargetType="Border">
@@ -189,12 +298,10 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" FontFamily="{StaticResource IconFont}" Text="&#xE721;"
-                                       Foreground="{StaticResource MutedTextBrush}" Margin="10,0,6,0"
-                                       VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="Search order number (Ctrl+F)" IsHitTestVisible="False"
-                                       Foreground="#98A2B0" VerticalAlignment="Center" Margin="3,0,0,0">
+                                       Foreground="{StaticResource MutedTextBrush}" Margin="10,0,6,0" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{svc:Tr Search_Placeholder}">
                                 <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource Placeholder}">
                                         <Setter Property="Visibility" Value="Collapsed" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding SearchText}" Value="">
@@ -207,7 +314,7 @@
                             <TextBox x:Name="SearchBox" Grid.Column="1" BorderThickness="0" Background="Transparent"
                                      VerticalContentAlignment="Center"
                                      Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                     ToolTip="Case-insensitive search on the order number, e.g. 0007. Esc clears it."
+                                     ToolTip="{svc:Tr Search_Tip}"
                                      AutomationProperties.Name="Search order number">
                                 <TextBox.InputBindings>
                                     <KeyBinding Key="Escape" Command="{Binding ClearSearchCommand}" />
@@ -215,27 +322,44 @@
                             </TextBox>
                             <Button Grid.Column="2" Style="{StaticResource LinkButton}" Margin="0,0,4,0"
                                     Command="{Binding ClearSearchCommand}"
-                                    ToolTip="Clear search (Esc)" AutomationProperties.Name="Clear search"
+                                    ToolTip="{svc:Tr Search_Clear}" AutomationProperties.Name="Clear search"
                                     Visibility="{Binding IsEnabled, RelativeSource={RelativeSource Self}, Converter={StaticResource BoolToVisibility}}">
                                 <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE711;" FontSize="10" />
                             </Button>
                         </Grid>
                     </Border>
+
+                    <!-- Active heat filter (traceability), removable -->
+                    <Border Margin="10,0,0,0" CornerRadius="14" Padding="12,4,4,4" Background="{StaticResource AccentSoftBrush}"
+                            Visibility="{Binding HasHeatFilter, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE71C;" Margin="0,1,6,0"
+                                       Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding HeatFilterLabel}" Foreground="{StaticResource AccentBrush}"
+                                       FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <Button Style="{StaticResource LinkButton}" Margin="4,0,0,0" Command="{Binding ClearHeatFilterCommand}"
+                                    ToolTip="{svc:Tr Heat_Filter_Clear}" AutomationProperties.Name="Remove heat filter">
+                                <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE711;" FontSize="10"
+                                           Foreground="{StaticResource AccentBrush}" />
+                            </Button>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </DockPanel>
 
-            <!-- Contextual hint about what the selection allows -->
-            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="2,12,0,10">
+            <!-- Contextual hint about what the selection allows; scan feedback on the right -->
+            <DockPanel Grid.Row="1" Grid.ColumnSpan="3" Margin="2,10,0,10">
+                <TextBlock DockPanel.Dock="Right" Text="{Binding ScanMessage}" Foreground="{StaticResource DangerBrush}"
+                           FontWeight="SemiBold" />
                 <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE946;" Foreground="{StaticResource AccentBrush}"
                            VerticalAlignment="Center" Margin="0,1,8,0" />
-                <TextBlock Text="{Binding SelectionHint}" Foreground="{StaticResource MutedTextBrush}" />
-            </StackPanel>
+                <TextBlock Text="{Binding SelectionHint}" Foreground="{StaticResource MutedTextBrush}" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
 
             <!-- Orders card -->
-            <Border Grid.Row="2" Background="{StaticResource SurfaceBrush}" CornerRadius="8"
-                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="1">
+            <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource Card}" Padding="1">
                 <Grid>
-                    <DataGrid ItemsSource="{Binding OrdersView}"
+                    <DataGrid ItemsSource="{Binding VisibleOrders}"
                               SelectedItem="{Binding SelectedOrder}"
                               IsSynchronizedWithCurrentItem="False"
                               IsReadOnly="True"
@@ -259,7 +383,7 @@
                                 <Setter Property="Background" Value="#F5F7FA" />
                                 <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
                                 <Setter Property="FontWeight" Value="SemiBold" />
-                                <Setter Property="Padding" Value="10,8" />
+                                <Setter Property="Padding" Value="6,8" />
                                 <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
                                 <Setter Property="BorderThickness" Value="0,0,0,1" />
                             </Style>
@@ -283,7 +407,7 @@
                                 <Setter Property="Template">
                                     <Setter.Value>
                                         <ControlTemplate TargetType="DataGridCell">
-                                            <Border Background="{TemplateBinding Background}" Padding="10,0">
+                                            <Border Background="{TemplateBinding Background}" Padding="6,0">
                                                 <ContentPresenter VerticalAlignment="Center" />
                                             </Border>
                                         </ControlTemplate>
@@ -298,34 +422,191 @@
                             </Style>
                         </DataGrid.CellStyle>
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Order No." Binding="{Binding OrderNumber}" Width="120" FontWeight="SemiBold" />
-                            <DataGridTextColumn Header="Material" Binding="{Binding Material}" Width="*" />
-                            <DataGridTextColumn Header="Quantity (pcs)" Binding="{Binding Quantity}" Width="110"
+                            <DataGridTextColumn Header="{svc:Tr Col_OrderNo}" Binding="{Binding OrderNumber}" Width="118" FontWeight="SemiBold" />
+                            <DataGridTextColumn Header="{svc:Tr Col_Heat}" Binding="{Binding HeatNumber}" Width="72" />
+                            <DataGridTextColumn Header="{svc:Tr Col_Material}" Binding="{Binding Material}" Width="*" MinWidth="80" />
+                            <DataGridTextColumn Header="{svc:Tr Col_Quantity}" Binding="{Binding Quantity}" Width="74"
                                                 ElementStyle="{StaticResource RightAligned}" />
-                            <DataGridTextColumn Header="From" Binding="{Binding SourceLocation}" Width="*" />
-                            <DataGridTextColumn Header="To" Binding="{Binding TargetLocation}" Width="*" />
-                            <DataGridTemplateColumn Header="Status" SortMemberPath="Status" Width="115"
+                            <DataGridTextColumn Header="{svc:Tr Col_From}" Binding="{Binding SourceLocation}" Width="*" MinWidth="80" />
+                            <DataGridTextColumn Header="{svc:Tr Col_To}" Binding="{Binding TargetLocation}" Width="*" MinWidth="80" />
+                            <DataGridTemplateColumn Header="{svc:Tr Col_Priority}" SortMemberPath="Priority" Width="50"
+                                                    CellTemplate="{StaticResource PriorityFlag}" />
+                            <DataGridTemplateColumn Header="{svc:Tr Col_Due}" SortMemberPath="DueAt" Width="Auto" MinWidth="62"
+                                                    CellTemplate="{StaticResource DueCell}" />
+                            <DataGridTemplateColumn Header="{svc:Tr Col_Status}" SortMemberPath="Status" Width="108"
                                                     CellTemplate="{StaticResource StatusBadge}" />
-                            <DataGridTextColumn Header="Created (local)" Width="135"
-                                                Binding="{Binding CreatedAtLocal, StringFormat='yyyy-MM-dd HH:mm'}" />
-                            <DataGridTextColumn Header="Updated (local)" Width="135"
-                                                Binding="{Binding UpdatedAtLocal, StringFormat='yyyy-MM-dd HH:mm'}" />
+                            <DataGridTextColumn Header="{svc:Tr Col_Created}" Binding="{Binding CreatedText}" SortMemberPath="CreatedAt" Width="Auto" MinWidth="62" />
+                            <DataGridTextColumn Header="{svc:Tr Col_Updated}" Binding="{Binding UpdatedText}" SortMemberPath="UpdatedAt" Width="Auto" MinWidth="72" />
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <!-- Empty state when filter and search match nothing -->
+                    <!-- Empty state when filters match nothing -->
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,40,0,0"
                                 Visibility="{Binding IsEmptyResult, Converter={StaticResource BoolToVisibility}}">
                         <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE721;" FontSize="28"
                                    Foreground="#B7C0CC" HorizontalAlignment="Center" />
-                        <TextBlock Text="No orders match the current filter and search." FontSize="14"
-                                   Margin="0,10,0,12" HorizontalAlignment="Center"
+                        <TextBlock Text="{svc:Tr Empty_Title}" FontSize="14" Margin="0,10,0,12" HorizontalAlignment="Center"
                                    Foreground="{StaticResource MutedTextBrush}" />
-                        <Button Content="Clear filters" HorizontalAlignment="Center"
-                                Command="{Binding ClearFiltersCommand}" />
+                        <Button Content="{svc:Tr Empty_Clear}" HorizontalAlignment="Center" Command="{Binding ClearFiltersCommand}"
+                                AutomationProperties.Name="Clear filters" />
                     </StackPanel>
                 </Grid>
             </Border>
+
+            <!-- Side panel: details and history of the selection, shift KPIs -->
+            <Grid Grid.Row="2" Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Border Style="{StaticResource Card}">
+                    <Grid>
+                        <TextBlock Text="{svc:Tr Details_Empty}" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap"
+                                   TextAlignment="Center" VerticalAlignment="Center" Margin="24">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedOrder}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Order details">
+                            <ScrollViewer.Style>
+                                <Style TargetType="ScrollViewer">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedOrder}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ScrollViewer.Style>
+                            <StackPanel Margin="16,14" DataContext="{Binding SelectedOrder}">
+                                <TextBlock Text="{Binding OrderNumber}" FontSize="17" FontWeight="SemiBold" />
+                                <StackPanel Orientation="Horizontal" Margin="0,6,0,12">
+                                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource StatusBadge}" Focusable="False" />
+                                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource PriorityBadge}" Margin="6,0,0,0" Focusable="False" />
+                                </StackPanel>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Heat}" />
+                                    <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6">
+                                        <TextBlock Text="{Binding HeatNumber}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        <Button Style="{StaticResource LinkButton}" Margin="8,-3,0,-3" Padding="6,1"
+                                                Foreground="{StaticResource AccentBrush}"
+                                                Command="{Binding DataContext.ShowHeatCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                ToolTip="{svc:Tr Details_ShowHeat_Tip}" AutomationProperties.Name="All orders of this heat">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE71C;" Margin="0,2,5,0" FontSize="11" />
+                                                <TextBlock Text="{svc:Tr Details_ShowHeat}" />
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
+                                    <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Material}" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource FieldValue}">
+                                        <Run Text="{Binding Material, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding QuantityText, Mode=OneWay}" />
+                                    </TextBlock>
+                                    <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Route}" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource FieldValue}" Text="{Binding Route}" />
+                                    <TextBlock Grid.Row="3" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Due}" />
+                                    <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6">
+                                        <TextBlock Text="{Binding DueTextLong}" />
+                                        <Border CornerRadius="8" Padding="7,0" Margin="8,0,0,0" Background="{StaticResource UrgentSoftBrush}"
+                                                Visibility="{Binding IsOverdue, Converter={StaticResource BoolToVisibility}}">
+                                            <TextBlock Text="{svc:Tr Details_Overdue}" FontSize="11.5" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource DangerBrush}" />
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Grid.Row="4" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Created}" />
+                                    <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource FieldValue}" Text="{Binding CreatedTextLong}" />
+                                </Grid>
+
+                                <TextBlock Text="{svc:Tr Details_History}" FontWeight="SemiBold" Margin="0,8,0,8" />
+                                <ItemsControl ItemsSource="{Binding History}" AutomationProperties.Name="Order history">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,0,0,10">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="16" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <Ellipse Width="8" Height="8" Fill="{StaticResource AccentBrush}" VerticalAlignment="Top" Margin="0,5,0,0" />
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Text="{Binding Change}" FontWeight="SemiBold" />
+                                                    <TextBlock Foreground="{StaticResource MutedTextBrush}" FontSize="12">
+                                                        <Run Text="{Binding When, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding By, Mode=OneWay}" />
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+
+                <!-- Current shift KPIs -->
+                <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,12,0,0" Padding="14,10"
+                        AutomationProperties.Name="Shift summary">
+                    <StackPanel>
+                        <TextBlock Text="{Binding ShiftTitle}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <UniformGrid Columns="3" Rows="2">
+                            <StackPanel Margin="0,0,0,4">
+                                <TextBlock Style="{StaticResource KpiValue}" Text="{Binding Shift.Started}" />
+                                <TextBlock Style="{StaticResource KpiLabel}" Text="{svc:Tr Kpi_Started}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,0,4">
+                                <TextBlock Style="{StaticResource KpiValue}" Text="{Binding Shift.Completed}" />
+                                <TextBlock Style="{StaticResource KpiLabel}" Text="{svc:Tr Kpi_Completed}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,0,4">
+                                <TextBlock Style="{StaticResource KpiValue}" Text="{Binding AverageTransitText}" />
+                                <TextBlock Style="{StaticResource KpiLabel}" Text="{svc:Tr Kpi_AvgTransit}" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource KpiValue}" Text="{Binding Shift.OpenOrders}" />
+                                <TextBlock Style="{StaticResource KpiLabel}" Text="{svc:Tr Kpi_Open}" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Shift.OverdueOrders}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource KpiValue}">
+                                            <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Shift.OverdueOrders}" Value="0">
+                                                    <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Style="{StaticResource KpiLabel}" Text="{svc:Tr Kpi_Overdue}" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource KpiValue}" Text="{Binding Shift.UrgentOpenOrders}" />
+                                <TextBlock Style="{StaticResource KpiLabel}" Text="{svc:Tr Kpi_Urgent}" />
+                            </StackPanel>
+                        </UniformGrid>
+                    </StackPanel>
+                </Border>
+            </Grid>
         </Grid>
     </DockPanel>
 </Window>

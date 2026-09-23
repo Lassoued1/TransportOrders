@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using TransportOrders.Core;
 
 namespace TransportOrders.Data;
@@ -13,6 +14,7 @@ public static class DataServiceCollectionExtensions
             options => options.UseSqlite($"Data Source={databasePath};Default Timeout=5"));
         services.AddSingleton<IOrderRepository, EfOrderRepository>();
         services.AddSingleton<DatabaseInitializer>();
+        services.TryAddSingleton(TimeProvider.System);
         return services;
     }
 }

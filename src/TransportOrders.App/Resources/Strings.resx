@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <!-- Window and header -->
+  <data name="Window_Title" xml:space="preserve"><value>Transport Orders — Extrusion Plant</value></data>
+  <data name="App_Title" xml:space="preserve"><value>Transport Orders</value></data>
+  <data name="App_Subtitle" xml:space="preserve"><value>Internal material transport · aluminium extrusion plant</value></data>
+  <data name="Action_Reload" xml:space="preserve"><value>Reload</value></data>
+  <data name="Action_Reload_Tip" xml:space="preserve"><value>Reload all orders from the database (F5)</value></data>
+  <data name="Language_Tip" xml:space="preserve"><value>Language</value></data>
+  <data name="Scan_Placeholder" xml:space="preserve"><value>Scan barcode…</value></data>
+  <data name="Scan_Tip" xml:space="preserve"><value>Scan or type an order number, then press Enter</value></data>
+  <data name="Scan_NotFound" xml:space="preserve"><value>No order found for “{0}”.</value></data>
+
+  <!-- Toolbar -->
+  <data name="Action_Start" xml:space="preserve"><value>_Start</value></data>
+  <data name="Action_Complete" xml:space="preserve"><value>_Complete</value></data>
+  <data name="Action_Cancel" xml:space="preserve"><value>Ca_ncel</value></data>
+  <data name="Action_Start_Tip" xml:space="preserve"><value>Planned → InTransit (Alt+S)</value></data>
+  <data name="Action_Complete_Tip" xml:space="preserve"><value>InTransit → Done (Alt+C)</value></data>
+  <data name="Action_Cancel_Tip" xml:space="preserve"><value>Planned or InTransit → Cancelled (Alt+N)</value></data>
+  <data name="Filter_All" xml:space="preserve"><value>All</value></data>
+  <data name="Search_Placeholder" xml:space="preserve"><value>Search order number (Ctrl+F)</value></data>
+  <data name="Search_Tip" xml:space="preserve"><value>Case-insensitive search on the order number, e.g. 0007. Esc clears it.</value></data>
+  <data name="Search_Clear" xml:space="preserve"><value>Clear search (Esc)</value></data>
+  <data name="Heat_Filter" xml:space="preserve"><value>Heat {0}</value></data>
+  <data name="Heat_Filter_Clear" xml:space="preserve"><value>Remove heat filter</value></data>
+
+  <!-- Statuses, priorities, actions -->
+  <data name="Status_Planned" xml:space="preserve"><value>Planned</value></data>
+  <data name="Status_InTransit" xml:space="preserve"><value>InTransit</value></data>
+  <data name="Status_Done" xml:space="preserve"><value>Done</value></data>
+  <data name="Status_Cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="Priority_Normal" xml:space="preserve"><value>Normal</value></data>
+  <data name="Priority_Urgent" xml:space="preserve"><value>Urgent</value></data>
+  <data name="Verb_Start" xml:space="preserve"><value>Start</value></data>
+  <data name="Verb_Complete" xml:space="preserve"><value>Complete</value></data>
+  <data name="Verb_Cancel" xml:space="preserve"><value>Cancel</value></data>
+
+  <!-- Hint line -->
+  <data name="Hint_None" xml:space="preserve"><value>Select an order to change its status.</value></data>
+  <data name="Hint_Actions" xml:space="preserve"><value>{0} is {1}. You can {2} it.</value></data>
+  <data name="Hint_Or" xml:space="preserve"><value> or </value></data>
+  <data name="Hint_Final" xml:space="preserve"><value>{0} is {1}. This is a final status: no further change is possible.</value></data>
+
+  <!-- Grid -->
+  <data name="Col_OrderNo" xml:space="preserve"><value>Order No.</value></data>
+  <data name="Col_Heat" xml:space="preserve"><value>Heat No.</value></data>
+  <data name="Col_Material" xml:space="preserve"><value>Material</value></data>
+  <data name="Col_Quantity" xml:space="preserve"><value>Qty (pcs)</value></data>
+  <data name="Col_From" xml:space="preserve"><value>From</value></data>
+  <data name="Col_To" xml:space="preserve"><value>To</value></data>
+  <data name="Col_Priority" xml:space="preserve"><value>Prio</value></data>
+  <data name="Col_Due" xml:space="preserve"><value>Due</value></data>
+  <data name="Col_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Col_Created" xml:space="preserve"><value>Created</value></data>
+  <data name="Col_Updated" xml:space="preserve"><value>Updated</value></data>
+  <data name="Empty_Title" xml:space="preserve"><value>No orders match the current filter and search.</value></data>
+  <data name="Empty_Clear" xml:space="preserve"><value>Clear filters</value></data>
+  <data name="Format_Short" xml:space="preserve"><value>MM-dd HH:mm</value></data>
+  <data name="Format_Long" xml:space="preserve"><value>yyyy-MM-dd HH:mm</value></data>
+
+  <!-- Details panel -->
+  <data name="Details_Empty" xml:space="preserve"><value>Select an order to see its details and history.</value></data>
+  <data name="Details_Heat" xml:space="preserve"><value>Heat no.</value></data>
+  <data name="Details_ShowHeat" xml:space="preserve"><value>Trace heat</value></data>
+  <data name="Details_ShowHeat_Tip" xml:space="preserve"><value>Trace this heat: show every order made from the same melt</value></data>
+  <data name="Details_Material" xml:space="preserve"><value>Material</value></data>
+  <data name="Details_Quantity" xml:space="preserve"><value>{0} pcs</value></data>
+  <data name="Details_Route" xml:space="preserve"><value>Route</value></data>
+  <data name="Details_Due" xml:space="preserve"><value>Due</value></data>
+  <data name="Details_Overdue" xml:space="preserve"><value>Overdue</value></data>
+  <data name="Details_Created" xml:space="preserve"><value>Created</value></data>
+  <data name="Details_History" xml:space="preserve"><value>History</value></data>
+  <data name="History_Created" xml:space="preserve"><value>Created as {0}</value></data>
+  <data name="History_Change" xml:space="preserve"><value>{0} → {1}</value></data>
+  <data name="History_By" xml:space="preserve"><value>by {0}</value></data>
+
+  <!-- Shift KPIs -->
+  <data name="Shift_Early" xml:space="preserve"><value>Early shift</value></data>
+  <data name="Shift_Late" xml:space="preserve"><value>Late shift</value></data>
+  <data name="Shift_Night" xml:space="preserve"><value>Night shift</value></data>
+  <data name="Shift_Title" xml:space="preserve"><value>{0} · {1:HH:mm}–{2:HH:mm}</value></data>
+  <data name="Kpi_Started" xml:space="preserve"><value>Started</value></data>
+  <data name="Kpi_Completed" xml:space="preserve"><value>Completed</value></data>
+  <data name="Kpi_AvgTransit" xml:space="preserve"><value>Avg. transit</value></data>
+  <data name="Kpi_Open" xml:space="preserve"><value>Open now</value></data>
+  <data name="Kpi_Overdue" xml:space="preserve"><value>Overdue</value></data>
+  <data name="Kpi_Urgent" xml:space="preserve"><value>Urgent open</value></data>
+  <data name="Kpi_Minutes" xml:space="preserve"><value>{0:0} min</value></data>
+  <data name="Kpi_None" xml:space="preserve"><value>–</value></data>
+
+  <!-- Status bar -->
+  <data name="Count_All" xml:space="preserve"><value>All orders</value></data>
+  <data name="Counts_Tip" xml:space="preserve"><value>Counts cover all stored orders, regardless of filter and search.</value></data>
+  <data name="Shown" xml:space="preserve"><value>Shown: {0} of {1}</value></data>
+  <data name="Busy_Loading" xml:space="preserve"><value>Loading orders…</value></data>
+  <data name="Busy_Saving" xml:space="preserve"><value>Saving {0}…</value></data>
+  <data name="LastAction" xml:space="preserve"><value>{0}: {1} → {2}</value></data>
+
+  <!-- Dialogs -->
+  <data name="Confirm_Cancel" xml:space="preserve"><value>Cancel order {0}? This cannot be undone.</value></data>
+  <data name="Error_Load" xml:space="preserve"><value>The transport orders could not be loaded.
+
+{0}</value></data>
+  <data name="Error_Save" xml:space="preserve"><value>The change to order {0} could not be saved and has been discarded.
+
+{1}</value></data>
+  <data name="Error_Transition" xml:space="preserve"><value>Order {0} cannot change from {1} to {2}.</value></data>
+  <data name="Error_Init" xml:space="preserve"><value>The database could not be initialized and the application will close.
+
+{0}</value></data>
+  <data name="Error_Unexpected" xml:space="preserve"><value>An unexpected error occurred.
+
+{0}</value></data>
+  <data name="Info_LegacyBackup" xml:space="preserve"><value>This version uses a new database format, so a fresh database with demo data was created.
+The previous file was kept as:
+{0}</value></data>
+</root>
