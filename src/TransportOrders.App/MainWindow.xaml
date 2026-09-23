@@ -103,6 +103,19 @@
                     </Style.Triggers>
                 </Style>
             </DataGrid.RowStyle>
+            <!-- Keep the selected row clearly visible even when the grid does not have keyboard focus -->
+            <DataGrid.CellStyle>
+                <Style TargetType="DataGridCell">
+                    <Setter Property="BorderThickness" Value="0" />
+                    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                    <Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="#CCE4F7" />
+                            <Setter Property="Foreground" Value="Black" />
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.CellStyle>
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Order No." Binding="{Binding OrderNumber}" Width="110" />
                 <DataGridTextColumn Header="Material" Binding="{Binding Material}" Width="*" />
