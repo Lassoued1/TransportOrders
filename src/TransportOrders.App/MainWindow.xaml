@@ -42,6 +42,10 @@
                     <Setter TargetName="Badge" Property="Background" Value="{StaticResource CancelledSoftBrush}" />
                     <Setter TargetName="Label" Property="Foreground" Value="{StaticResource CancelledBrush}" />
                 </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="OnHold">
+                    <Setter TargetName="Badge" Property="Background" Value="{StaticResource OnHoldSoftBrush}" />
+                    <Setter TargetName="Label" Property="Foreground" Value="{StaticResource OnHoldBrush}" />
+                </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
 
@@ -219,6 +223,10 @@
                         <TextBlock><Run Text="{svc:Tr Status_Planned}" /><Run Text=": " /><Run Text="{Binding PlannedCount, Mode=OneWay}" /></TextBlock>
                     </StackPanel>
                     <StackPanel Style="{StaticResource Counter}">
+                        <Ellipse Style="{StaticResource Dot}" Fill="{StaticResource OnHoldBrush}" />
+                        <TextBlock><Run Text="{svc:Tr Status_OnHold}" /><Run Text=": " /><Run Text="{Binding OnHoldCount, Mode=OneWay}" /></TextBlock>
+                    </StackPanel>
+                    <StackPanel Style="{StaticResource Counter}">
                         <Ellipse Style="{StaticResource Dot}" Fill="#D08A12" />
                         <TextBlock><Run Text="{svc:Tr Status_InTransit}" /><Run Text=": " /><Run Text="{Binding InTransitCount, Mode=OneWay}" /></TextBlock>
                     </StackPanel>
@@ -263,10 +271,12 @@
             <!-- Toolbar: status filter, search, heat filter, actions -->
             <DockPanel Grid.Row="0" Grid.ColumnSpan="3">
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="{svc:Tr Action_Start}" Style="{StaticResource PrimaryButton}" Margin="8,0,0,0"
-                            Command="{Binding StartOrderCommand}" ToolTip="{svc:Tr Action_Start_Tip}" />
+                    <Button Content="{svc:Tr Action_PlanLoads}" Style="{StaticResource PrimaryButton}" Margin="8,0,0,0"
+                            Command="{Binding PlanLoadsCommand}" ToolTip="{svc:Tr Action_PlanLoads_Tip}" />
+                    <Button Content="{Binding HoldButtonText}" Margin="8,0,0,0"
+                            Command="{Binding HoldOrReleaseCommand}" ToolTip="{svc:Tr Action_Hold_Tip}" />
                     <Button Content="{svc:Tr Action_Complete}" Style="{StaticResource PrimaryButton}" Margin="8,0,0,0"
-                            Command="{Binding CompleteOrderCommand}" ToolTip="{svc:Tr Action_Complete_Tip}" />
+                            Command="{Binding CompleteTransportCommand}" ToolTip="{svc:Tr Action_Complete_Tip}" />
                     <Button Content="{svc:Tr Action_Cancel}" Style="{StaticResource DangerButton}" Margin="8,0,0,0"
                             Command="{Binding CancelOrderCommand}" ToolTip="{svc:Tr Action_Cancel_Tip}" />
                 </StackPanel>
@@ -279,7 +289,7 @@
                              AutomationProperties.Name="Status filter" />
 
                     <!-- Search box with icon, placeholder and clear button -->
-                    <Border Margin="12,0,0,0" Width="240" Height="32" CornerRadius="6"
+                    <Border Margin="12,0,0,0" Width="200" Height="32" CornerRadius="6"
                             Background="{StaticResource SurfaceBrush}" BorderThickness="1">
                         <Border.Style>
                             <Style TargetType="Border">
@@ -386,6 +396,14 @@
                                 <Setter Property="Padding" Value="6,8" />
                                 <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
                                 <Setter Property="BorderThickness" Value="0,0,0,1" />
+                                <!-- Long headers such as "Length (m)" wrap instead of widening narrow numeric columns -->
+                                <Setter Property="ContentTemplate">
+                                    <Setter.Value>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                                        </DataTemplate>
+                                    </Setter.Value>
+                                </Setter>
                             </Style>
                         </DataGrid.ColumnHeaderStyle>
                         <DataGrid.RowStyle>
@@ -422,20 +440,21 @@
                             </Style>
                         </DataGrid.CellStyle>
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="{svc:Tr Col_OrderNo}" Binding="{Binding OrderNumber}" Width="118" FontWeight="SemiBold" />
+                            <DataGridTextColumn Header="{svc:Tr Col_OrderNo}" Binding="{Binding OrderNumber}" Width="112" FontWeight="SemiBold" />
                             <DataGridTextColumn Header="{svc:Tr Col_Heat}" Binding="{Binding HeatNumber}" Width="72" />
-                            <DataGridTextColumn Header="{svc:Tr Col_Material}" Binding="{Binding Material}" Width="*" MinWidth="80" />
-                            <DataGridTextColumn Header="{svc:Tr Col_Quantity}" Binding="{Binding Quantity}" Width="74"
-                                                ElementStyle="{StaticResource RightAligned}" />
+                            <DataGridTextColumn Header="{svc:Tr Col_Material}" Binding="{Binding Material}" Width="1.3*" MinWidth="80" />
+                            <DataGridTextColumn Header="{svc:Tr Col_Length}" Binding="{Binding LengthText}" SortMemberPath="LoadingLength"
+                                                Width="60" ElementStyle="{StaticResource RightAligned}" />
+                            <DataGridTextColumn Header="{svc:Tr Col_Weight}" Binding="{Binding WeightText}" SortMemberPath="Weight"
+                                                Width="62" ElementStyle="{StaticResource RightAligned}" />
                             <DataGridTextColumn Header="{svc:Tr Col_From}" Binding="{Binding SourceLocation}" Width="*" MinWidth="80" />
                             <DataGridTextColumn Header="{svc:Tr Col_To}" Binding="{Binding TargetLocation}" Width="*" MinWidth="80" />
-                            <DataGridTemplateColumn Header="{svc:Tr Col_Priority}" SortMemberPath="Priority" Width="50"
+                            <DataGridTemplateColumn Header="{svc:Tr Col_Priority}" SortMemberPath="Priority" Width="46"
                                                     CellTemplate="{StaticResource PriorityFlag}" />
                             <DataGridTemplateColumn Header="{svc:Tr Col_Due}" SortMemberPath="DueAt" Width="Auto" MinWidth="62"
                                                     CellTemplate="{StaticResource DueCell}" />
-                            <DataGridTemplateColumn Header="{svc:Tr Col_Status}" SortMemberPath="Status" Width="108"
+                            <DataGridTemplateColumn Header="{svc:Tr Col_Status}" SortMemberPath="Status" Width="100"
                                                     CellTemplate="{StaticResource StatusBadge}" />
-                            <DataGridTextColumn Header="{svc:Tr Col_Created}" Binding="{Binding CreatedText}" SortMemberPath="CreatedAt" Width="Auto" MinWidth="62" />
                             <DataGridTextColumn Header="{svc:Tr Col_Updated}" Binding="{Binding UpdatedText}" SortMemberPath="UpdatedAt" Width="Auto" MinWidth="72" />
                         </DataGrid.Columns>
                     </DataGrid>
@@ -504,6 +523,10 @@
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
                                     <TextBlock Grid.Row="0" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Heat}" />
                                     <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6">
@@ -518,14 +541,39 @@
                                             </StackPanel>
                                         </Button>
                                     </StackPanel>
-                                    <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Material}" />
-                                    <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource FieldValue}">
-                                        <Run Text="{Binding Material, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding QuantityText, Mode=OneWay}" />
-                                    </TextBlock>
-                                    <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Route}" />
-                                    <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource FieldValue}" Text="{Binding Route}" />
-                                    <TextBlock Grid.Row="3" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Due}" />
-                                    <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6">
+                                    <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Piece}" />
+                                    <WrapPanel Grid.Row="1" Grid.Column="1" Margin="0,0,0,6">
+                                        <TextBlock Text="{Binding PieceText}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                        <Button Style="{StaticResource LinkButton}" Margin="4,-3,0,-3" Padding="6,1"
+                                                Foreground="{StaticResource AccentBrush}"
+                                                Command="{Binding DataContext.ShowGenealogyCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                ToolTip="{svc:Tr Details_Genealogy_Tip}" AutomationProperties.Name="Genealogy">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE81E;" Margin="0,2,5,0" FontSize="11" />
+                                                <TextBlock Text="{svc:Tr Details_Genealogy}" />
+                                            </StackPanel>
+                                        </Button>
+                                    </WrapPanel>
+                                    <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Material}" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource FieldValue}" Text="{Binding Material}" />
+                                    <TextBlock Grid.Row="3" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Load}" />
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Style="{StaticResource FieldValue}" Text="{Binding LoadText}" />
+                                    <TextBlock Grid.Row="4" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Route}" />
+                                    <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource FieldValue}" Text="{Binding Route}" />
+                                    <TextBlock Grid.Row="5" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Transport}"
+                                               Visibility="{Binding HasTransport, Converter={StaticResource BoolToVisibility}}" />
+                                    <StackPanel Grid.Row="5" Grid.Column="1" Margin="0,0,0,6"
+                                                Visibility="{Binding HasTransport, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock Text="{Binding TransportText}" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding PartLoadText}" TextWrapping="Wrap" Foreground="#8A5300" FontSize="12" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Row="6" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_HoldReason}"
+                                               Visibility="{Binding IsOnHold, Converter={StaticResource BoolToVisibility}}" />
+                                    <TextBlock Grid.Row="6" Grid.Column="1" Style="{StaticResource FieldValue}" Text="{Binding HoldReason}"
+                                               Foreground="{StaticResource OnHoldBrush}" FontWeight="SemiBold"
+                                               Visibility="{Binding IsOnHold, Converter={StaticResource BoolToVisibility}}" />
+                                    <TextBlock Grid.Row="7" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Due}" />
+                                    <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6">
                                         <TextBlock Text="{Binding DueTextLong}" />
                                         <Border CornerRadius="8" Padding="7,0" Margin="8,0,0,0" Background="{StaticResource UrgentSoftBrush}"
                                                 Visibility="{Binding IsOverdue, Converter={StaticResource BoolToVisibility}}">
@@ -533,8 +581,8 @@
                                                        Foreground="{StaticResource DangerBrush}" />
                                         </Border>
                                     </StackPanel>
-                                    <TextBlock Grid.Row="4" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Created}" />
-                                    <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource FieldValue}" Text="{Binding CreatedTextLong}" />
+                                    <TextBlock Grid.Row="8" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Created}" />
+                                    <TextBlock Grid.Row="8" Grid.Column="1" Style="{StaticResource FieldValue}" Text="{Binding CreatedTextLong}" />
                                 </Grid>
 
                                 <TextBlock Text="{svc:Tr Details_History}" FontWeight="SemiBold" Margin="0,8,0,8" />
@@ -552,6 +600,17 @@
                                                     <TextBlock Foreground="{StaticResource MutedTextBrush}" FontSize="12">
                                                         <Run Text="{Binding When, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding By, Mode=OneWay}" />
                                                     </TextBlock>
+                                                    <TextBlock Text="{Binding Note}" FontSize="12" FontStyle="Italic" TextWrapping="Wrap">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Note}" Value="{x:Null}">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
                                                 </StackPanel>
                                             </Grid>
                                         </DataTemplate>
@@ -567,10 +626,18 @@
                         AutomationProperties.Name="Shift summary">
                     <StackPanel>
                         <TextBlock Text="{Binding ShiftTitle}" FontWeight="SemiBold" Margin="0,0,0,6" />
-                        <UniformGrid Columns="3" Rows="2">
+                        <UniformGrid Columns="3" Rows="3">
                             <StackPanel Margin="0,0,0,4">
-                                <TextBlock Style="{StaticResource KpiValue}" Text="{Binding Shift.Started}" />
-                                <TextBlock Style="{StaticResource KpiLabel}" Text="{svc:Tr Kpi_Started}" />
+                                <TextBlock Style="{StaticResource KpiValue}" Text="{Binding Shift.Trips}" />
+                                <TextBlock Style="{StaticResource KpiLabel}" Text="{svc:Tr Kpi_Trips}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,0,4">
+                                <TextBlock Style="{StaticResource KpiValue}" Text="{Binding AverageFillText}" />
+                                <TextBlock Style="{StaticResource KpiLabel}" Text="{svc:Tr Kpi_AvgFill}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,0,4">
+                                <TextBlock Style="{StaticResource KpiValue}" Text="{Binding Shift.PartLoads}" />
+                                <TextBlock Style="{StaticResource KpiLabel}" Text="{svc:Tr Kpi_PartLoads}" />
                             </StackPanel>
                             <StackPanel Margin="0,0,0,4">
                                 <TextBlock Style="{StaticResource KpiValue}" Text="{Binding Shift.Completed}" />
@@ -579,6 +646,10 @@
                             <StackPanel Margin="0,0,0,4">
                                 <TextBlock Style="{StaticResource KpiValue}" Text="{Binding AverageTransitText}" />
                                 <TextBlock Style="{StaticResource KpiLabel}" Text="{svc:Tr Kpi_AvgTransit}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,0,4">
+                                <TextBlock Style="{StaticResource KpiValue}" Text="{Binding Shift.OnHoldOrders}" Foreground="{StaticResource OnHoldBrush}" />
+                                <TextBlock Style="{StaticResource KpiLabel}" Text="{svc:Tr Kpi_OnHold}" />
                             </StackPanel>
                             <StackPanel>
                                 <TextBlock Style="{StaticResource KpiValue}" Text="{Binding Shift.OpenOrders}" />

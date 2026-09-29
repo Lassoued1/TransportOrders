@@ -9,32 +9,29 @@ namespace TransportOrders.App.ViewModels;
 
 /// <summary>
 /// Screen logic of the main window. It has no WPF dependency, so it is unit-tested with fakes
-/// (repository, clock, dialogs) in TransportOrders.App.Tests.
+/// (repository, clock, dialogs) in TransportOrders.App.Tests. Orders only start moving through
+/// "Plan loads", where the domain's full-load rule applies.
 /// </summary>
 public sealed partial class MainViewModel : ObservableObject
 {
     public const string AllStatuses = "All";
 
-    private static readonly (string VerbKey, OrderStatus Target)[] Actions =
-    [
-        ("Verb_Start", OrderStatus.InTransit),
-        ("Verb_Complete", OrderStatus.Done),
-        ("Verb_Cancel", OrderStatus.Cancelled),
-    ];
-
     private readonly IOrderRepository _repository;
     private readonly IUserMessageService _messages;
+    private readonly IDialogService _dialogs;
     private readonly ILocalizer _localizer;
     private readonly ICurrentUser _user;
     private readonly TimeProvider _clock;
     private readonly TimeZoneInfo _plantTimeZone;
     private readonly ILogger<MainViewModel> _logger;
     private readonly List<OrderRowViewModel> _allOrders = [];
-    private (string OrderNumber, OrderStatus From, OrderStatus To)? _lastChange;
+    private readonly Dictionary<string, Transport> _transports = [];
+    private Func<string>? _describeLastAction;
 
     public MainViewModel(
         IOrderRepository repository,
         IUserMessageService messages,
+        IDialogService dialogs,
         ILocalizer localizer,
         ICurrentUser user,
         TimeProvider clock,
@@ -43,6 +40,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         _repository = repository;
         _messages = messages;
+        _dialogs = dialogs;
         _localizer = localizer;
         _user = user;
         _clock = clock;
@@ -79,15 +77,18 @@ public sealed partial class MainViewModel : ObservableObject
     private string? _heatFilter;
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(StartOrderCommand))]
-    [NotifyCanExecuteChangedFor(nameof(CompleteOrderCommand))]
+    [NotifyPropertyChangedFor(nameof(HoldButtonText))]
+    [NotifyCanExecuteChangedFor(nameof(HoldOrReleaseCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CompleteTransportCommand))]
     [NotifyCanExecuteChangedFor(nameof(CancelOrderCommand))]
     [NotifyCanExecuteChangedFor(nameof(ShowHeatCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ShowGenealogyCommand))]
     private OrderRowViewModel? _selectedOrder;
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(StartOrderCommand))]
-    [NotifyCanExecuteChangedFor(nameof(CompleteOrderCommand))]
+    [NotifyCanExecuteChangedFor(nameof(PlanLoadsCommand))]
+    [NotifyCanExecuteChangedFor(nameof(HoldOrReleaseCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CompleteTransportCommand))]
     [NotifyCanExecuteChangedFor(nameof(CancelOrderCommand))]
     [NotifyCanExecuteChangedFor(nameof(ReloadCommand))]
     private bool _isBusy;
@@ -123,6 +124,9 @@ public sealed partial class MainViewModel : ObservableObject
     private int _plannedCount;
 
     [ObservableProperty]
+    private int _onHoldCount;
+
+    [ObservableProperty]
     private int _inTransitCount;
 
     [ObservableProperty]
@@ -140,9 +144,15 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _averageTransitText = string.Empty;
 
+    [ObservableProperty]
+    private string _averageFillText = string.Empty;
+
     public bool HasHeatFilter => HeatFilter is not null;
 
     public string HeatFilterLabel => HeatFilter is null ? string.Empty : _localizer.Format("Heat_Filter", HeatFilter);
+
+    /// <summary>"Release" for material on hold, "Hold" otherwise.</summary>
+    public string HoldButtonText => _localizer[SelectedOrder?.Status == OrderStatus.OnHold ? "Action_Release" : "Action_Hold"];
 
     private DateTime UtcNow => _clock.GetUtcNow().UtcDateTime;
 
@@ -153,10 +163,17 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             var orders = await Task.Run(() => _repository.GetAllAsync());
+            var transports = await Task.Run(() => _repository.GetTransportsAsync());
+
+            _transports.Clear();
+            foreach (var transport in transports)
+            {
+                _transports[transport.TransportNumber] = transport;
+            }
 
             _allOrders.Clear();
-            _allOrders.AddRange(orders.Select(o => new OrderRowViewModel(o, _localizer, () => UtcNow)));
-            _logger.LogInformation("Loaded {Count} orders", _allOrders.Count);
+            _allOrders.AddRange(orders.Select(o => new OrderRowViewModel(o, _localizer, () => UtcNow, TransportOf)));
+            _logger.LogInformation("Loaded {Count} orders and {Transports} transports", _allOrders.Count, _transports.Count);
 
             RefreshList(_allOrders.FirstOrDefault(r => r.OrderNumber == selectedNumber));
         }
@@ -203,7 +220,7 @@ public sealed partial class MainViewModel : ObservableObject
     private bool CanClearFilters() => SearchText.Length > 0 || SelectedStatusFilter != AllStatuses || HeatFilter is not null;
 
     /// <summary>Traceability: show every order made from the selected order's heat.</summary>
-    [RelayCommand(CanExecute = nameof(CanShowHeat))]
+    [RelayCommand(CanExecute = nameof(HasSelection))]
     private void ShowHeat()
     {
         var heat = SelectedOrder!.HeatNumber;
@@ -212,7 +229,16 @@ public sealed partial class MainViewModel : ObservableObject
         HeatFilter = heat;
     }
 
-    private bool CanShowHeat() => SelectedOrder is not null;
+    /// <summary>Traceability: the heat's ingots and the pieces made from them, as a tree.</summary>
+    [RelayCommand(CanExecute = nameof(HasSelection))]
+    private void ShowGenealogy()
+    {
+        var row = SelectedOrder!;
+        var genealogy = HeatGenealogy.Build(row.HeatNumber, _allOrders.Select(r => r.Order));
+        _dialogs.ShowGenealogy(new GenealogyViewModel(genealogy, row.PieceNumber, _localizer));
+    }
+
+    private bool HasSelection() => SelectedOrder is not null;
 
     [RelayCommand(CanExecute = nameof(CanClearHeatFilter))]
     private void ClearHeatFilter() => HeatFilter = null;
@@ -249,22 +275,129 @@ public sealed partial class MainViewModel : ObservableObject
         RefreshList(row);
     }
 
-    [RelayCommand(CanExecute = nameof(CanStartOrder))]
-    private Task StartOrderAsync() => ChangeStatusAsync(OrderStatus.InTransit);
+    /// <summary>Opens the load plan: the only way orders start moving, so every trip follows the full-load rule.</summary>
+    [RelayCommand(CanExecute = nameof(CanPlanLoads))]
+    private void PlanLoads() =>
+        _dialogs.ShowLoadPlan(new LoadPlanViewModel(
+            () => LoadPlanner.Plan(_allOrders.Select(r => r.Order), Fleet.Default, UtcNow),
+            DispatchAsync,
+            _localizer));
 
-    private bool CanStartOrder() => CanChangeTo(OrderStatus.InTransit);
+    private bool CanPlanLoads() => !IsBusy;
 
-    [RelayCommand(CanExecute = nameof(CanCompleteOrder))]
-    private Task CompleteOrderAsync() => ChangeStatusAsync(OrderStatus.Done);
+    /// <summary>Dispatches one proposal; returns the transport number, or null when it failed (the user was told why).</summary>
+    public async Task<string?> DispatchAsync(LoadProposal proposal, PartLoadReason? reason)
+    {
+        SetBusy(_localizer["Busy_Dispatching"]);
+        try
+        {
+            var number = await Task.Run(() => _repository.NextTransportNumberAsync(UtcNow));
+            Transport transport;
+            try
+            {
+                transport = Transport.Dispatch(number, proposal.Vehicle, proposal.Orders, _user.Name, UtcNow, reason);
+            }
+            catch (TransportRuleException ex)
+            {
+                _messages.ShowError(_localizer.Format("Error_Dispatch", ex.Message));
+                return null;
+            }
 
-    private bool CanCompleteOrder() => CanChangeTo(OrderStatus.Done);
+            try
+            {
+                await Task.Run(() => _repository.SaveTransportAsync(transport, proposal.Orders));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Saving transport {Transport:l} failed", number);
+                _messages.ShowError(_localizer.Format("Error_Dispatch", ex.GetBaseException().Message));
+                await LoadAsync();
+                return null;
+            }
+
+            _logger.LogInformation(
+                "{Transport:l} dispatched by {User:l}: {Vehicle:l} {From:l} -> {To:l}, {Orders} orders, {Fill:P0} of the loading length{Reason:l}",
+                number, _user.Name, transport.Vehicle.ToString(), transport.SourceLocation, transport.TargetLocation,
+                transport.OrderCount, transport.FillRate, reason is null ? string.Empty : $", part load: {reason}");
+            _describeLastAction = () => _localizer.Format("LastAction_Dispatch", number, transport.OrderCount, transport.FillRate);
+            await LoadAsync();
+            return number;
+        }
+        finally
+        {
+            ClearBusy();
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanHoldOrRelease))]
+    private async Task HoldOrReleaseAsync()
+    {
+        if (SelectedOrder is not { } row)
+        {
+            return;
+        }
+
+        if (row.Status == OrderStatus.OnHold)
+        {
+            await ChangeStatusAsync(OrderStatus.Planned, null);
+            return;
+        }
+
+        var reason = _dialogs.AskForReason(_localizer["Hold_Title"], _localizer.Format("Hold_Prompt", row.OrderNumber));
+        if (reason is not null)
+        {
+            await ChangeStatusAsync(OrderStatus.OnHold, reason);
+        }
+    }
+
+    private bool CanHoldOrRelease() => CanChangeTo(OrderStatus.OnHold) || CanChangeTo(OrderStatus.Planned);
+
+    /// <summary>The selected order's transport arrived: every order on it becomes Done.</summary>
+    [RelayCommand(CanExecute = nameof(CanCompleteTransport))]
+    private async Task CompleteTransportAsync()
+    {
+        if (SelectedOrder?.TransportNumber is not { } number || !_transports.TryGetValue(number, out var transport))
+        {
+            return;
+        }
+
+        if (!_messages.Confirm(_localizer.Format("Confirm_Complete", number, transport.TargetLocation, transport.OrderCount)))
+        {
+            return;
+        }
+
+        var orders = _allOrders.Where(r => r.TransportNumber == number).Select(r => r.Order).ToList();
+        SetBusy(_localizer.Format("Busy_Saving", number));
+        try
+        {
+            transport.Complete(orders, _user.Name, UtcNow);
+            await Task.Run(() => _repository.SaveTransportAsync(transport, orders));
+            _logger.LogInformation("{Transport:l} arrived, confirmed by {User:l}", number, _user.Name);
+            _describeLastAction = () => _localizer.Format("LastAction_Arrived", number);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Completing transport {Transport:l} failed", number);
+            _messages.ShowError(_localizer.Format("Error_SaveTransport", number, ex.GetBaseException().Message));
+        }
+
+        // Reload in both cases: after a failure the in-memory transport and orders already changed.
+        await LoadAsync();
+        ClearBusy();
+    }
+
+    private bool CanCompleteTransport() =>
+        !IsBusy
+        && SelectedOrder is { Status: OrderStatus.InTransit, TransportNumber: { } number }
+        && _transports.TryGetValue(number, out var transport)
+        && transport.Status == TransportStatus.InTransit;
 
     [RelayCommand(CanExecute = nameof(CanCancelOrder))]
     private async Task CancelOrderAsync()
     {
         if (SelectedOrder is { } row && _messages.Confirm(_localizer.Format("Confirm_Cancel", row.OrderNumber)))
         {
-            await ChangeStatusAsync(OrderStatus.Cancelled);
+            await ChangeStatusAsync(OrderStatus.Cancelled, null);
         }
     }
 
@@ -273,7 +406,7 @@ public sealed partial class MainViewModel : ObservableObject
     private bool CanChangeTo(OrderStatus target) =>
         !IsBusy && SelectedOrder?.Order.CanTransitionTo(target) == true;
 
-    private async Task ChangeStatusAsync(OrderStatus target)
+    private async Task ChangeStatusAsync(OrderStatus target, string? note)
     {
         if (SelectedOrder is not { } row)
         {
@@ -285,7 +418,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             // The domain enforces the transition rules and records the history entry;
             // the view model never assigns the status itself.
-            row.Order.TransitionTo(target, _user.Name, UtcNow);
+            row.Order.TransitionTo(target, _user.Name, UtcNow, note);
         }
         catch (InvalidStatusTransitionException ex)
         {
@@ -312,10 +445,10 @@ public sealed partial class MainViewModel : ObservableObject
         }
 
         ClearBusy();
-        _logger.LogInformation("{OrderNumber:l}: {From:l} -> {To:l} by {User:l}",
-            row.OrderNumber, previous.ToString(), target.ToString(), _user.Name);
-        _lastChange = (row.OrderNumber, previous, target);
-        UpdateLastAction();
+        _logger.LogInformation("{OrderNumber:l}: {From:l} -> {To:l} by {User:l}{Note:l}",
+            row.OrderNumber, previous.ToString(), target.ToString(), _user.Name, note is null ? string.Empty : $" ({note})");
+        _describeLastAction = () => _localizer.Format("LastAction", row.OrderNumber,
+            OrderRowViewModel.StatusName(_localizer, previous), OrderRowViewModel.StatusName(_localizer, target));
         row.Refresh();
         RefreshList(row);
     }
@@ -338,6 +471,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnSelectedLanguageChanged(string value) => _localizer.SetLanguage(value);
 
+    private Transport? TransportOf(string number) => _transports.GetValueOrDefault(number);
+
     private void OnLanguageChanged()
     {
         SelectedLanguage = _localizer.Language;
@@ -356,9 +491,10 @@ public sealed partial class MainViewModel : ObservableObject
         }
 
         OnPropertyChanged(nameof(HeatFilterLabel));
+        OnPropertyChanged(nameof(HoldButtonText));
         SelectionHint = DescribeSelection(SelectedOrder);
         ShownText = _localizer.Format("Shown", VisibleOrders.Count, TotalCount);
-        UpdateLastAction();
+        LastAction = _describeLastAction?.Invoke() ?? string.Empty;
         UpdateShiftSummary();
     }
 
@@ -374,20 +510,17 @@ public sealed partial class MainViewModel : ObservableObject
         BusyMessage = string.Empty;
     }
 
-    private void UpdateLastAction() =>
-        LastAction = _lastChange is { } change
-            ? _localizer.Format("LastAction", change.OrderNumber,
-                OrderRowViewModel.StatusName(_localizer, change.From), OrderRowViewModel.StatusName(_localizer, change.To))
-            : string.Empty;
-
     private void UpdateShiftSummary()
     {
-        var summary = ShiftSummary.Calculate(_allOrders.Select(r => r.Order), UtcNow, _plantTimeZone);
+        var summary = ShiftSummary.Calculate(_allOrders.Select(r => r.Order), _transports.Values, UtcNow, _plantTimeZone);
         Shift = summary;
         ShiftTitle = _localizer.Format("Shift_Title",
             _localizer[$"Shift_{summary.Shift.Kind}"], summary.Shift.StartLocal, summary.Shift.EndLocal);
         AverageTransitText = summary.AverageTransitTime is { } average
             ? _localizer.Format("Kpi_Minutes", average.TotalMinutes)
+            : _localizer["Kpi_None"];
+        AverageFillText = summary.AverageFillRate is { } fill
+            ? _localizer.Format("Kpi_Percent", fill)
             : _localizer["Kpi_None"];
     }
 
@@ -401,19 +534,15 @@ public sealed partial class MainViewModel : ObservableObject
         return statusMatches && searchMatches && heatMatches;
     }
 
-    /// <summary>Explains which actions the selected order allows, based on the domain rules.</summary>
-    private string DescribeSelection(OrderRowViewModel? row)
+    /// <summary>Explains what can happen next to the selected order.</summary>
+    private string DescribeSelection(OrderRowViewModel? row) => row switch
     {
-        if (row is null)
-        {
-            return _localizer["Hint_None"];
-        }
-
-        var allowed = Actions.Where(a => row.Order.CanTransitionTo(a.Target)).Select(a => _localizer[a.VerbKey]).ToList();
-        return allowed.Count == 0
-            ? _localizer.Format("Hint_Final", row.OrderNumber, row.StatusText)
-            : _localizer.Format("Hint_Actions", row.OrderNumber, row.StatusText, string.Join(_localizer["Hint_Or"], allowed));
-    }
+        null => _localizer["Hint_None"],
+        { Status: OrderStatus.Planned } => _localizer.Format("Hint_Planned", row.OrderNumber),
+        { Status: OrderStatus.OnHold } => _localizer.Format("Hint_OnHold", row.OrderNumber, row.HoldReason),
+        { Status: OrderStatus.InTransit } => _localizer.Format("Hint_InTransit", row.OrderNumber, row.TransportNumber),
+        _ => _localizer.Format("Hint_Final", row.OrderNumber, row.StatusText),
+    };
 
     /// <summary>
     /// Re-applies the filters, recomputes the counters and keeps <paramref name="preferredSelection"/>
@@ -437,17 +566,20 @@ public sealed partial class MainViewModel : ObservableObject
 
         TotalCount = _allOrders.Count;
         PlannedCount = _allOrders.Count(r => r.Status == OrderStatus.Planned);
+        OnHoldCount = _allOrders.Count(r => r.Status == OrderStatus.OnHold);
         InTransitCount = _allOrders.Count(r => r.Status == OrderStatus.InTransit);
         DoneCount = _allOrders.Count(r => r.Status == OrderStatus.Done);
         CancelledCount = _allOrders.Count(r => r.Status == OrderStatus.Cancelled);
         IsEmptyResult = TotalCount > 0 && visible.Count == 0;
         ShownText = _localizer.Format("Shown", visible.Count, TotalCount);
+        LastAction = _describeLastAction?.Invoke() ?? string.Empty;
         UpdateShiftSummary();
 
         // The selected row may have changed status without the selection itself changing.
         SelectionHint = DescribeSelection(SelectedOrder);
-        StartOrderCommand.NotifyCanExecuteChanged();
-        CompleteOrderCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(HoldButtonText));
+        HoldOrReleaseCommand.NotifyCanExecuteChanged();
+        CompleteTransportCommand.NotifyCanExecuteChanged();
         CancelOrderCommand.NotifyCanExecuteChanged();
     }
 }

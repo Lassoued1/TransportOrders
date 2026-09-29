@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -57,14 +57,16 @@ public sealed class ApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(12, orders.Count);
         Assert.Contains("\"status\":\"Planned\"", body);
-        Assert.All(orders, o => Assert.Equal("pcs", o.Unit));
+        Assert.Contains("\"status\":\"OnHold\"", body);
+        Assert.All(orders, o => Assert.True(o.WeightTonnes > 0 && o.LoadingLengthMetres > 0));
     }
 
     [Theory]
-    [InlineData("Planned", 4)]
-    [InlineData("intransit", 3)]
-    [InlineData("Done", 3)]
-    [InlineData("Cancelled", 2)]
+    [InlineData("Planned", 7)]
+    [InlineData("onhold", 1)]
+    [InlineData("intransit", 1)]
+    [InlineData("Done", 2)]
+    [InlineData("Cancelled", 1)]
     public async Task Filters_by_status(string status, int expected)
     {
         var orders = await _client.GetFromJsonAsync<List<OrderDto>>($"/api/orders?status={status}", Json);
@@ -79,8 +81,8 @@ public sealed class ApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         Assert.NotEmpty(orders!);
         Assert.All(orders!, o => Assert.Equal("H-26031", o.HeatNumber));
-        Assert.Contains(orders!, o => o.Material.StartsWith("Billet"));
-        Assert.Contains(orders!, o => o.Material.StartsWith("Profile"));
+        Assert.Contains(orders!, o => o.Material == "1.2379 ingot");
+        Assert.Contains(orders!, o => o.Material == "1.2379 forged bar");
     }
 
     [Fact]
@@ -137,9 +139,43 @@ public sealed class ApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var summary = await _client.GetFromJsonAsync<ShiftSummaryDto>("/api/shift-summary", Json);
 
         Assert.Equal("UTC", summary!.TimeZone);
-        Assert.Equal(7, summary.OpenOrders);
-        Assert.Equal(2, summary.OverdueOrders);
-        Assert.Equal(2, summary.UrgentOpenOrders);
+        Assert.Equal((9, 2, 3, 1), (summary.OpenOrders, summary.OverdueOrders, summary.UrgentOpenOrders, summary.OnHoldOrders));
+    }
+
+    [Fact]
+    public async Task Transports_show_fill_rate_and_recorded_part_load_reasons()
+    {
+        var transports = await _client.GetFromJsonAsync<List<TransportDto>>("/api/transports", Json);
+
+        Assert.Equal(2, transports!.Count);
+        Assert.All(transports, t => Assert.True(t.IsPartLoad && t.PartLoadReason is not null));
+        var heavy = transports.Single(t => t.PartLoadReason == PartLoadReason.PayloadLimit);
+        Assert.True(heavy.LoadedWeightTonnes >= heavy.PayloadTonnes * 0.9m);
+    }
+
+    [Fact]
+    public async Task Load_plan_proposes_full_loads_and_one_urgent_part_load()
+    {
+        var plan = await _client.GetFromJsonAsync<LoadPlanDto>("/api/load-plan", Json);
+
+        Assert.Equal(0.9m, plan!.FullLoadThreshold);
+        Assert.Equal(3, plan.Proposals.Count);
+        Assert.Equal(2, plan.Proposals.Count(p => p.IsFull && p.FillRate >= 0.9m));
+        var partLoad = plan.Proposals.Single(p => !p.IsFull);
+        Assert.Equal(["TO-2026-0007"], partLoad.OrderNumbers);
+        Assert.Equal(PartLoadReason.UrgentMaterial, partLoad.SuggestedReason);
+        Assert.DoesNotContain(plan.Proposals, p => p.OrderNumbers.Contains("TO-2026-0011"));   // on hold
+    }
+
+    [Fact]
+    public async Task Genealogy_shows_ingots_and_the_bars_made_from_them()
+    {
+        var tree = await _client.GetFromJsonAsync<GenealogyDto>("/api/heats/h-26031/genealogy", Json);
+
+        Assert.Equal(("H-26031", 6), (tree!.HeatNumber, tree.PieceCount));
+        Assert.Equal(["H-26031-1", "H-26031-2"], tree.Pieces.Select(p => p.PieceNumber));
+        Assert.All(tree.Pieces, ingot => Assert.Equal(2, ingot.Children.Count));
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync("/api/heats/H-00000/genealogy")).StatusCode);
     }
 
     [Fact]

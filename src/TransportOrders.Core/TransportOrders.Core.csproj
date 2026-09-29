@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- The view-model tests' in-memory repository rebuilds orders from their stored history, like EF does. -->
+    <InternalsVisibleTo Include="TransportOrders.App.Tests" />
+  </ItemGroup>
+
 </Project>

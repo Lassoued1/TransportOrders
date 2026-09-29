@@ -25,6 +25,8 @@
         <SolidColorBrush x:Key="DoneSoftBrush" Color="#E2F4E7" />
         <SolidColorBrush x:Key="CancelledBrush" Color="#6B7280" />
         <SolidColorBrush x:Key="CancelledSoftBrush" Color="#EEEFF1" />
+        <SolidColorBrush x:Key="OnHoldBrush" Color="#6D28D9" />
+        <SolidColorBrush x:Key="OnHoldSoftBrush" Color="#EDE9FE" />
 
         <FontFamily x:Key="IconFont">Segoe MDL2 Assets</FontFamily>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />

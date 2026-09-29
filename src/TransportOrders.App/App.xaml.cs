@@ -48,6 +48,7 @@ public partial class App : Application
         services.AddSingleton<ICurrentUser, WindowsCurrentUser>();
         services.AddSingleton(TimeZoneInfo.Local);
         services.AddSingleton<IUserMessageService, MessageBoxService>();
+        services.AddSingleton<IDialogService, WpfDialogService>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
         _services = services.BuildServiceProvider();

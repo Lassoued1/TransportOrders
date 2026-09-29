@@ -29,12 +29,44 @@ public static class OrderEndpoints
             .WithName("GetOrderByNumber")
             .WithSummary("Look an order up by its number (case-insensitive), e.g. from a scanned barcode.");
 
+        app.MapGet("/api/transports", GetTransportsAsync)
+            .WithTags("Transports")
+            .WithName("GetTransports")
+            .WithSummary("All transports, newest first, with their fill rate and any recorded part-load reason.");
+
+        app.MapGet("/api/load-plan", GetLoadPlanAsync)
+            .WithTags("Transports")
+            .WithName("GetLoadPlan")
+            .WithSummary("Proposed full loads for the orders waiting to move. A calculation only: nothing is dispatched.");
+
+        app.MapGet("/api/heats/{heatNumber}/genealogy", GetGenealogyAsync)
+            .WithTags("Traceability")
+            .WithName("GetHeatGenealogy")
+            .WithSummary("Everything made from one heat as a tree: ingots and the pieces made from them, with their orders.");
+
         app.MapGet("/api/shift-summary", GetShiftSummaryAsync)
             .WithTags("Shift")
             .WithName("GetShiftSummary")
             .WithSummary("Key figures of the current shift (Early 06-14, Late 14-22, Night 22-06, plant time).");
 
         return app;
+    }
+
+    private static async Task<Ok<List<TransportDto>>> GetTransportsAsync(IOrderRepository repository, CancellationToken cancellationToken) =>
+        TypedResults.Ok((await repository.GetTransportsAsync(cancellationToken)).Select(TransportDto.From).ToList());
+
+    private static async Task<Ok<LoadPlanDto>> GetLoadPlanAsync(
+        IOrderRepository repository, TimeProvider clock, CancellationToken cancellationToken)
+    {
+        var orders = await repository.GetAllAsync(cancellationToken);
+        return TypedResults.Ok(LoadPlanDto.From(LoadPlanner.Plan(orders, Fleet.Default, clock.GetUtcNow().UtcDateTime)));
+    }
+
+    private static async Task<Results<Ok<GenealogyDto>, NotFound>> GetGenealogyAsync(
+        string heatNumber, IOrderRepository repository, CancellationToken cancellationToken)
+    {
+        var genealogy = HeatGenealogy.Build(heatNumber, await repository.GetAllAsync(cancellationToken));
+        return genealogy.Roots.Count == 0 ? TypedResults.NotFound() : TypedResults.Ok(GenealogyDto.From(genealogy));
     }
 
     private static async Task<Results<Ok<List<OrderDto>>, ValidationProblem>> GetOrdersAsync(
@@ -88,7 +120,8 @@ public static class OrderEndpoints
         IOrderRepository repository, TimeProvider clock, PlantTimeZone plant, CancellationToken cancellationToken)
     {
         var orders = await repository.GetAllAsync(cancellationToken);
-        var summary = ShiftSummary.Calculate(orders, clock.GetUtcNow().UtcDateTime, plant.Zone);
+        var transports = await repository.GetTransportsAsync(cancellationToken);
+        var summary = ShiftSummary.Calculate(orders, transports, clock.GetUtcNow().UtcDateTime, plant.Zone);
         return TypedResults.Ok(ShiftSummaryDto.From(summary, plant.Zone));
     }
 }

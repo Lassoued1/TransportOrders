@@ -35,6 +35,10 @@ namespace TransportOrders.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Note")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ToStatus")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -48,6 +52,72 @@ namespace TransportOrders.Data.Migrations
                     b.HasIndex("TransportOrderId");
 
                     b.ToTable("StatusChanges", (string)null);
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.Transport", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DispatchedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DispatchedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("LoadedLength")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("LoadedWeight")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("LoadingLength")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("OrderCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PartLoadReason")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Payload")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceLocation")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TargetLocation")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TransportNumber")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Vehicle")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Transports", (string)null);
                 });
 
             modelBuilder.Entity("TransportOrders.Core.TransportOrder", b =>
@@ -64,7 +134,10 @@ namespace TransportOrders.Data.Migrations
 
                     b.Property<string>("HeatNumber")
                         .IsRequired()
-                        .HasMaxLength(20)
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("LoadingLength")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Material")
@@ -75,6 +148,15 @@ namespace TransportOrders.Data.Migrations
                     b.Property<string>("OrderNumber")
                         .IsRequired()
                         .HasMaxLength(12)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ParentPieceNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PieceNumber")
+                        .IsRequired()
+                        .HasMaxLength(30)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Priority")
@@ -100,7 +182,14 @@ namespace TransportOrders.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("TransportNumber")
+                        .HasMaxLength(12)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Weight")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -109,6 +198,8 @@ namespace TransportOrders.Data.Migrations
 
                     b.HasIndex("OrderNumber")
                         .IsUnique();
+
+                    b.HasIndex("TransportNumber");
 
                     b.ToTable("TransportOrders", (string)null);
                 });
@@ -120,6 +211,15 @@ namespace TransportOrders.Data.Migrations
                         .HasForeignKey("TransportOrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.TransportOrder", b =>
+                {
+                    b.HasOne("TransportOrders.Core.Transport", null)
+                        .WithMany()
+                        .HasForeignKey("TransportNumber")
+                        .HasPrincipalKey("TransportNumber")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("TransportOrders.Core.TransportOrder", b =>

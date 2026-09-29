@@ -1,0 +1,114 @@
+<Window x:Class="TransportOrders.App.Views.LoadPlanWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:TransportOrders.App.ViewModels"
+        xmlns:svc="clr-namespace:TransportOrders.App.Services"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:LoadPlanViewModel}"
+        Title="{svc:Tr Plan_Title}" Width="780" Height="640" MinWidth="620" MinHeight="420"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource WindowBrush}" Foreground="{StaticResource TextBrush}"
+        FontFamily="Segoe UI" FontSize="13">
+    <DockPanel Margin="20,16">
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+            <TextBlock Text="{svc:Tr Plan_Title}" FontSize="19" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding ThresholdText}" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,4,0,0" />
+            <Border Margin="0,10,0,0" Padding="12,8" CornerRadius="6" Background="{StaticResource DoneSoftBrush}">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Message}" Value="">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <!-- A live region: screen readers announce each dispatch confirmation as it appears -->
+                <TextBlock Text="{Binding Message}" Foreground="{StaticResource DoneBrush}" FontWeight="SemiBold"
+                           TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+            </Border>
+        </StackPanel>
+
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+            <Button DockPanel.Dock="Right" Content="{svc:Tr Dialog_Close}" IsCancel="True" />
+            <TextBlock Text="{Binding UnplannableText}" Foreground="{StaticResource DangerBrush}" VerticalAlignment="Center"
+                       TextWrapping="Wrap" />
+        </DockPanel>
+
+        <Grid>
+            <TextBlock Text="{svc:Tr Plan_Empty}" Foreground="{StaticResource MutedTextBrush}" FontSize="14"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}" />
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Proposals}" AutomationProperties.Name="Load proposals" Focusable="False">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:LoadProposalViewModel}">
+                            <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}"
+                                    BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,10">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock>
+                                            <Run Text="{Binding VehicleText, Mode=OneWay}" FontWeight="SemiBold" FontSize="14" />
+                                            <Run Text="  ·  " Foreground="{StaticResource MutedTextBrush}" />
+                                            <Run Text="{Binding RouteText, Mode=OneWay}" />
+                                        </TextBlock>
+
+                                        <!-- Fill bar: green when full, amber for a part load -->
+                                        <DockPanel Margin="0,8,0,4">
+                                            <TextBlock DockPanel.Dock="Right" Margin="10,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold">
+                                                <Run Text="{Binding FillText, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding StateText, Mode=OneWay}" />
+                                            </TextBlock>
+                                            <ProgressBar Height="10" Minimum="0" Maximum="100" Value="{Binding FillPercent, Mode=OneWay}"
+                                                         BorderThickness="0" Background="#E9EDF2" AutomationProperties.Name="Fill rate">
+                                                <ProgressBar.Style>
+                                                    <Style TargetType="ProgressBar">
+                                                        <Setter Property="Foreground" Value="{StaticResource DoneBrush}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsPartLoad}" Value="True">
+                                                                <Setter Property="Foreground" Value="#D08A12" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ProgressBar.Style>
+                                            </ProgressBar>
+                                        </DockPanel>
+                                        <TextBlock Foreground="{StaticResource MutedTextBrush}" FontSize="12">
+                                            <Run Text="{Binding LengthText, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding WeightText, Mode=OneWay}" />
+                                        </TextBlock>
+
+                                        <ItemsControl ItemsSource="{Binding OrderLines}" Margin="0,8,0,0" Focusable="False">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding}" FontSize="12" Margin="0,1" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <!-- Part loads need a recorded reason -->
+                                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0"
+                                                    Visibility="{Binding IsPartLoad, Converter={StaticResource BoolToVisibility}}">
+                                            <TextBlock Text="{svc:Tr Plan_Reason}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                            <ComboBox Width="220" ItemsSource="{Binding Reasons}" DisplayMemberPath="Label"
+                                                      SelectedValuePath="Key" SelectedValue="{Binding SelectedReason}"
+                                                      AutomationProperties.Name="Part-load reason" />
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1" VerticalAlignment="Top" Margin="16,0,0,0"
+                                            Content="{svc:Tr Plan_Dispatch}" Style="{StaticResource PrimaryButton}"
+                                            Command="{Binding DispatchCommand}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+    </DockPanel>
+</Window>

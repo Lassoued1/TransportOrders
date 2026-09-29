@@ -6,9 +6,9 @@
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
 
   <!-- Window and header -->
-  <data name="Window_Title" xml:space="preserve"><value>Transportaufträge — Strangpresswerk</value></data>
+  <data name="Window_Title" xml:space="preserve"><value>Transportaufträge — Edelstahlwerk</value></data>
   <data name="App_Title" xml:space="preserve"><value>Transportaufträge</value></data>
-  <data name="App_Subtitle" xml:space="preserve"><value>Innerbetrieblicher Materialtransport · Aluminium-Strangpresswerk</value></data>
+  <data name="App_Subtitle" xml:space="preserve"><value>Innerbetrieblicher Materialtransport · Edelstahlwerk</value></data>
   <data name="Action_Reload" xml:space="preserve"><value>Neu laden</value></data>
   <data name="Action_Reload_Tip" xml:space="preserve"><value>Alle Aufträge neu aus der Datenbank laden (F5)</value></data>
   <data name="Language_Tip" xml:space="preserve"><value>Sprache</value></data>
@@ -17,61 +17,80 @@
   <data name="Scan_NotFound" xml:space="preserve"><value>Kein Auftrag für „{0}“ gefunden.</value></data>
 
   <!-- Toolbar -->
-  <data name="Action_Start" xml:space="preserve"><value>_Starten</value></data>
+  <data name="Action_PlanLoads" xml:space="preserve"><value>Ladungen _planen</value></data>
+  <data name="Action_PlanLoads_Tip" xml:space="preserve"><value>Wartende Aufträge zu vollen Ladungen zusammenfassen und abfertigen (Alt+P)</value></data>
+  <data name="Action_Hold" xml:space="preserve"><value>_Sperren</value></data>
+  <data name="Action_Release" xml:space="preserve"><value>_Freigeben</value></data>
+  <data name="Action_Hold_Tip" xml:space="preserve"><value>Qualitätssperre: Material mit Begründung sperren oder wieder freigeben (Alt+S / Alt+F)</value></data>
   <data name="Action_Complete" xml:space="preserve"><value>_Abschließen</value></data>
+  <data name="Action_Complete_Tip" xml:space="preserve"><value>Der Transport ist angekommen: alle Aufträge darauf werden erledigt (Alt+A)</value></data>
   <data name="Action_Cancel" xml:space="preserve"><value>St_ornieren</value></data>
-  <data name="Action_Start_Tip" xml:space="preserve"><value>Geplant → Unterwegs (Alt+S)</value></data>
-  <data name="Action_Complete_Tip" xml:space="preserve"><value>Unterwegs → Erledigt (Alt+A)</value></data>
-  <data name="Action_Cancel_Tip" xml:space="preserve"><value>Geplant oder Unterwegs → Storniert (Alt+O)</value></data>
+  <data name="Action_Cancel_Tip" xml:space="preserve"><value>Auftrag stornieren (Alt+O)</value></data>
   <data name="Filter_All" xml:space="preserve"><value>Alle</value></data>
-  <data name="Search_Placeholder" xml:space="preserve"><value>Auftragsnummer suchen (Strg+F)</value></data>
+  <data name="Search_Placeholder" xml:space="preserve"><value>Auftrag suchen (Strg+F)</value></data>
   <data name="Search_Tip" xml:space="preserve"><value>Suche nach Auftragsnummer, ohne Groß-/Kleinschreibung, z. B. 0007. Esc löscht die Eingabe.</value></data>
   <data name="Search_Clear" xml:space="preserve"><value>Suche löschen (Esc)</value></data>
   <data name="Heat_Filter" xml:space="preserve"><value>Schmelze {0}</value></data>
   <data name="Heat_Filter_Clear" xml:space="preserve"><value>Schmelzenfilter entfernen</value></data>
 
-  <!-- Statuses, priorities, actions -->
+  <!-- Statuses, priorities, vehicles, part-load reasons -->
   <data name="Status_Planned" xml:space="preserve"><value>Geplant</value></data>
+  <data name="Status_OnHold" xml:space="preserve"><value>Gesperrt</value></data>
   <data name="Status_InTransit" xml:space="preserve"><value>Unterwegs</value></data>
   <data name="Status_Done" xml:space="preserve"><value>Erledigt</value></data>
   <data name="Status_Cancelled" xml:space="preserve"><value>Storniert</value></data>
   <data name="Priority_Normal" xml:space="preserve"><value>Normal</value></data>
   <data name="Priority_Urgent" xml:space="preserve"><value>Eilig</value></data>
-  <data name="Verb_Start" xml:space="preserve"><value>Starten</value></data>
-  <data name="Verb_Complete" xml:space="preserve"><value>Abschließen</value></data>
-  <data name="Verb_Cancel" xml:space="preserve"><value>Stornieren</value></data>
+  <data name="Vehicle_Forklift" xml:space="preserve"><value>Gabelstapler</value></data>
+  <data name="Vehicle_HeavyLoadCarrier" xml:space="preserve"><value>Schwerlasttransporter</value></data>
+  <data name="Vehicle_RailWagon" xml:space="preserve"><value>Bahnwaggon</value></data>
+  <data name="Reason_UrgentMaterial" xml:space="preserve"><value>Dringendes Material</value></data>
+  <data name="Reason_PayloadLimit" xml:space="preserve"><value>Nutzlast erreicht</value></data>
+  <data name="Reason_EndOfShift" xml:space="preserve"><value>Schichtende</value></data>
+  <data name="Reason_NoMatchingMaterial" xml:space="preserve"><value>Kein passendes Material</value></data>
 
   <!-- Hint line -->
-  <data name="Hint_None" xml:space="preserve"><value>Wählen Sie einen Auftrag, um seinen Status zu ändern.</value></data>
-  <data name="Hint_Actions" xml:space="preserve"><value>{0} ist {1}. Mögliche Aktionen: {2}.</value></data>
-  <data name="Hint_Or" xml:space="preserve"><value> oder </value></data>
+  <data name="Hint_None" xml:space="preserve"><value>Wählen Sie einen Auftrag, um die nächsten Schritte zu sehen.</value></data>
+  <data name="Hint_Planned" xml:space="preserve"><value>{0} wartet auf den Transport und fährt mit der nächsten vollen Ladung („Ladungen planen“). Er kann auch gesperrt oder storniert werden.</value></data>
+  <data name="Hint_OnHold" xml:space="preserve"><value>{0} ist gesperrt: {1}. Erst nach der Freigabe kann er verladen werden, oder er wird storniert.</value></data>
+  <data name="Hint_InTransit" xml:space="preserve"><value>{0} ist auf Transport {1}. Schließen Sie den Transport bei Ankunft ab.</value></data>
   <data name="Hint_Final" xml:space="preserve"><value>{0} ist {1}. Endstatus: Keine weitere Änderung möglich.</value></data>
 
   <!-- Grid -->
   <data name="Col_OrderNo" xml:space="preserve"><value>Auftrag</value></data>
   <data name="Col_Heat" xml:space="preserve"><value>Schmelze</value></data>
   <data name="Col_Material" xml:space="preserve"><value>Material</value></data>
-  <data name="Col_Quantity" xml:space="preserve"><value>Stück</value></data>
+  <data name="Col_Length" xml:space="preserve"><value>Länge (m)</value></data>
+  <data name="Col_Weight" xml:space="preserve"><value>Gewicht (t)</value></data>
   <data name="Col_From" xml:space="preserve"><value>Von</value></data>
   <data name="Col_To" xml:space="preserve"><value>Nach</value></data>
   <data name="Col_Priority" xml:space="preserve"><value>Prio</value></data>
   <data name="Col_Due" xml:space="preserve"><value>Fällig</value></data>
   <data name="Col_Status" xml:space="preserve"><value>Status</value></data>
-  <data name="Col_Created" xml:space="preserve"><value>Erstellt</value></data>
   <data name="Col_Updated" xml:space="preserve"><value>Geändert</value></data>
   <data name="Empty_Title" xml:space="preserve"><value>Keine Aufträge entsprechen Filter und Suche.</value></data>
   <data name="Empty_Clear" xml:space="preserve"><value>Filter zurücksetzen</value></data>
   <data name="Format_Short" xml:space="preserve"><value>dd.MM. HH:mm</value></data>
   <data name="Format_Long" xml:space="preserve"><value>dd.MM.yyyy HH:mm</value></data>
+  <data name="Number_OneDecimal" xml:space="preserve"><value>{0:0.0}</value></data>
 
   <!-- Details panel -->
   <data name="Details_Empty" xml:space="preserve"><value>Wählen Sie einen Auftrag, um Details und Verlauf zu sehen.</value></data>
   <data name="Details_Heat" xml:space="preserve"><value>Schmelze</value></data>
   <data name="Details_ShowHeat" xml:space="preserve"><value>Rückverfolgen</value></data>
   <data name="Details_ShowHeat_Tip" xml:space="preserve"><value>Schmelze rückverfolgen: alle Aufträge aus derselben Schmelze anzeigen</value></data>
+  <data name="Details_Piece" xml:space="preserve"><value>Teil</value></data>
+  <data name="Details_FromPiece" xml:space="preserve"><value>aus {0}</value></data>
+  <data name="Details_Genealogy" xml:space="preserve"><value>Stammbaum</value></data>
+  <data name="Details_Genealogy_Tip" xml:space="preserve"><value>Stammbaum der Schmelze: Blöcke und die daraus gefertigten Teile</value></data>
   <data name="Details_Material" xml:space="preserve"><value>Material</value></data>
-  <data name="Details_Quantity" xml:space="preserve"><value>{0} Stk.</value></data>
+  <data name="Details_Load" xml:space="preserve"><value>Ladung</value></data>
+  <data name="Details_LoadValue" xml:space="preserve"><value>{0:0.0} m · {1:0.0} t · {2} Stk.</value></data>
   <data name="Details_Route" xml:space="preserve"><value>Strecke</value></data>
+  <data name="Details_Transport" xml:space="preserve"><value>Transport</value></data>
+  <data name="Details_TransportValue" xml:space="preserve"><value>{0} · {1} · {2:P0} der Ladelänge</value></data>
+  <data name="Details_PartLoad" xml:space="preserve"><value>Teilladung: {0}</value></data>
+  <data name="Details_HoldReason" xml:space="preserve"><value>Sperrgrund</value></data>
   <data name="Details_Due" xml:space="preserve"><value>Fällig</value></data>
   <data name="Details_Overdue" xml:space="preserve"><value>Überfällig</value></data>
   <data name="Details_Created" xml:space="preserve"><value>Erstellt</value></data>
@@ -85,14 +104,38 @@
   <data name="Shift_Late" xml:space="preserve"><value>Spätschicht</value></data>
   <data name="Shift_Night" xml:space="preserve"><value>Nachtschicht</value></data>
   <data name="Shift_Title" xml:space="preserve"><value>{0} · {1:HH:mm}–{2:HH:mm}</value></data>
-  <data name="Kpi_Started" xml:space="preserve"><value>Gestartet</value></data>
+  <data name="Kpi_Trips" xml:space="preserve"><value>Fahrten</value></data>
+  <data name="Kpi_AvgFill" xml:space="preserve"><value>Ø Auslastung</value></data>
+  <data name="Kpi_PartLoads" xml:space="preserve"><value>Teilladungen</value></data>
   <data name="Kpi_Completed" xml:space="preserve"><value>Abgeschlossen</value></data>
   <data name="Kpi_AvgTransit" xml:space="preserve"><value>Ø Transportzeit</value></data>
-  <data name="Kpi_Open" xml:space="preserve"><value>Offen</value></data>
   <data name="Kpi_Overdue" xml:space="preserve"><value>Überfällig</value></data>
+  <data name="Kpi_Open" xml:space="preserve"><value>Offen</value></data>
   <data name="Kpi_Urgent" xml:space="preserve"><value>Eilig offen</value></data>
+  <data name="Kpi_OnHold" xml:space="preserve"><value>Gesperrt</value></data>
   <data name="Kpi_Minutes" xml:space="preserve"><value>{0:0} min</value></data>
+  <data name="Kpi_Percent" xml:space="preserve"><value>{0:P0}</value></data>
   <data name="Kpi_None" xml:space="preserve"><value>–</value></data>
+
+  <!-- Load planning dialog -->
+  <data name="Plan_Title" xml:space="preserve"><value>Ladungen planen</value></data>
+  <data name="Plan_Threshold" xml:space="preserve"><value>Ein Transport muss mindestens {0:P0} seiner Ladelänge nutzen. Eine Teilladung braucht eine Begründung, die festgehalten wird.</value></data>
+  <data name="Plan_Length" xml:space="preserve"><value>{0:0.0} m von {1:0.0} m</value></data>
+  <data name="Plan_Weight" xml:space="preserve"><value>{0:0.0} t von {1:0.0} t</value></data>
+  <data name="Plan_Full" xml:space="preserve"><value>Volle Ladung</value></data>
+  <data name="Plan_PartLoad" xml:space="preserve"><value>Teilladung</value></data>
+  <data name="Plan_Reason" xml:space="preserve"><value>Begründung</value></data>
+  <data name="Plan_Dispatch" xml:space="preserve"><value>_Abfertigen</value></data>
+  <data name="Plan_Empty" xml:space="preserve"><value>Kein Auftrag wartet auf die Verladung.</value></data>
+  <data name="Plan_Unplannable" xml:space="preserve"><value>Passt auf kein Fahrzeug: {0}</value></data>
+  <data name="Plan_Dispatched" xml:space="preserve"><value>{0} abgefertigt: {1} Auftrag/Aufträge, {2:P0} der Ladelänge.</value></data>
+  <data name="Plan_OrderLine" xml:space="preserve"><value>{0} · {1} · {2:0.0} m · {3:0.0} t</value></data>
+
+  <!-- Genealogy dialog -->
+  <data name="Genealogy_Title" xml:space="preserve"><value>Stammbaum der Schmelze {0}</value></data>
+  <data name="Genealogy_Summary" xml:space="preserve"><value>{0} Teile aus dieser Schmelze</value></data>
+  <data name="Genealogy_NoOrder" xml:space="preserve"><value>kein Transport erfasst</value></data>
+  <data name="Genealogy_OrderLine" xml:space="preserve"><value>{0} · {1} → {2} · {3}</value></data>
 
   <!-- Status bar -->
   <data name="Count_All" xml:space="preserve"><value>Alle Aufträge</value></data>
@@ -100,16 +143,31 @@
   <data name="Shown" xml:space="preserve"><value>Angezeigt: {0} von {1}</value></data>
   <data name="Busy_Loading" xml:space="preserve"><value>Aufträge werden geladen…</value></data>
   <data name="Busy_Saving" xml:space="preserve"><value>{0} wird gespeichert…</value></data>
+  <data name="Busy_Dispatching" xml:space="preserve"><value>Transport wird abgefertigt…</value></data>
   <data name="LastAction" xml:space="preserve"><value>{0}: {1} → {2}</value></data>
+  <data name="LastAction_Dispatch" xml:space="preserve"><value>{0} abgefertigt: {1} Auftrag/Aufträge, {2:P0}</value></data>
+  <data name="LastAction_Arrived" xml:space="preserve"><value>{0} angekommen</value></data>
 
   <!-- Dialogs -->
+  <data name="Dialog_Ok" xml:space="preserve"><value>OK</value></data>
+  <data name="Dialog_Cancel" xml:space="preserve"><value>Abbrechen</value></data>
+  <data name="Dialog_Close" xml:space="preserve"><value>Schließen</value></data>
+  <data name="Hold_Title" xml:space="preserve"><value>Qualitätssperre</value></data>
+  <data name="Hold_Prompt" xml:space="preserve"><value>Warum wird {0} gesperrt? Die Begründung wird im Verlauf festgehalten.</value></data>
   <data name="Confirm_Cancel" xml:space="preserve"><value>Auftrag {0} stornieren? Dies kann nicht rückgängig gemacht werden.</value></data>
+  <data name="Confirm_Complete" xml:space="preserve"><value>Ist Transport {0} in „{1}“ angekommen? Seine {2} Auftrag/Aufträge werden als erledigt markiert.</value></data>
   <data name="Error_Load" xml:space="preserve"><value>Die Transportaufträge konnten nicht geladen werden.
 
 {0}</value></data>
   <data name="Error_Save" xml:space="preserve"><value>Die Änderung an Auftrag {0} konnte nicht gespeichert werden und wurde verworfen.
 
 {1}</value></data>
+  <data name="Error_SaveTransport" xml:space="preserve"><value>Die Änderung an Transport {0} konnte nicht gespeichert werden und wurde verworfen.
+
+{1}</value></data>
+  <data name="Error_Dispatch" xml:space="preserve"><value>Der Transport konnte nicht abgefertigt werden.
+
+{0}</value></data>
   <data name="Error_Transition" xml:space="preserve"><value>Auftrag {0} kann nicht von {1} nach {2} wechseln.</value></data>
   <data name="Error_Init" xml:space="preserve"><value>Die Datenbank konnte nicht initialisiert werden. Die Anwendung wird beendet.
 

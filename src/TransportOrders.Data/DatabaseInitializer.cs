@@ -5,17 +5,19 @@ using TransportOrders.Core;
 
 namespace TransportOrders.Data;
 
-/// <param name="Seeded">True when the 12 demo orders were inserted into an empty database.</param>
-/// <param name="LegacyBackupPath">Where a database created by an older version (without migrations) was moved.</param>
+/// <param name="Seeded">True when the demo data was inserted into an empty database.</param>
+/// <param name="LegacyBackupPath">Where a database created by version 1 (without migrations) was moved.</param>
 public sealed record DatabaseInitializationResult(bool Seeded, string? LegacyBackupPath);
 
 /// <summary>
-/// Applies the EF Core migrations and seeds 12 demo orders only when the database has no order yet,
-/// so restarts never duplicate or reset data.
+/// Applies the EF Core migrations and seeds the demo data (12 orders, 2 transports) only when the database
+/// has no order yet, so restarts never duplicate or reset data.
 /// </summary>
 public sealed class DatabaseInitializer(IDbContextFactory<AppDbContext> contextFactory, TimeProvider timeProvider)
 {
-    public const string SeedUser = "demo data";
+    public const string PlanningUser = "Planning";
+    public const string DispatchUser = "Dispatch";
+    public const string QualityUser = "QA";
 
     public async Task<DatabaseInitializationResult> InitializeAsync(CancellationToken cancellationToken = default)
     {
@@ -29,7 +31,9 @@ public sealed class DatabaseInitializer(IDbContextFactory<AppDbContext> contextF
             return new DatabaseInitializationResult(false, legacyBackup);
         }
 
-        context.Orders.AddRange(CreateDemoOrders(timeProvider.GetUtcNow().UtcDateTime));
+        var (orders, transports) = CreateDemoData(timeProvider.GetUtcNow().UtcDateTime);
+        context.Transports.AddRange(transports);
+        context.Orders.AddRange(orders);
         await context.SaveChangesAsync(cancellationToken);
         return new DatabaseInitializationResult(true, legacyBackup);
     }
@@ -89,56 +93,56 @@ public sealed class DatabaseInitializer(IDbContextFactory<AppDbContext> contextF
     }
 
     /// <summary>
-    /// 12 orders spread over the last five hours relative to <paramref name="utcNow"/>, so due times and
-    /// overdue flags are meaningful on first launch. Billets and the profiles pressed from them share a heat number.
+    /// A special-steel plant over the last five hours relative to <paramref name="utcNow"/>: ingots from the melt shop
+    /// go to ESR remelting, ESR ingots to the forge, forged bars to heat treatment and ultrasonic testing.
+    /// Pieces carry their heat number and the piece they were made from. Every status is reached through the
+    /// domain rules, so history and transports are consistent. The open orders are chosen so the load planner
+    /// has full loads to propose on two routes and an urgent part load on a third.
     /// </summary>
-    internal static IReadOnlyList<TransportOrder> CreateDemoOrders(DateTime utcNow)
+    internal static (IReadOnlyList<TransportOrder> Orders, IReadOnlyList<Transport> Transports) CreateDemoData(DateTime utcNow)
     {
         var start = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, utcNow.Hour, utcNow.Minute / 5 * 5, 0, DateTimeKind.Utc)
             .AddHours(-5);
+        DateTime At(int minutes) => start.AddMinutes(minutes);
 
-        (string Material, string Heat, int Quantity, string From, string To, OrderStatus Status, OrderPriority Priority, int DueMinutes)[] rows =
+        const string melt = "Melt shop", esr = "ESR plant", forge = "Forge", heat = "Heat treatment", ut = "UT testing";
+        const OrderPriority normal = OrderPriority.Normal, urgent = OrderPriority.Urgent;
+
+        (string Heat, string Piece, string? Parent, string Material, int Pieces, decimal Tonnes, decimal Metres,
+            string From, string To, OrderPriority Priority, int Created, int DueAfter)[] rows =
         [
-            ("Billet 6060", "H-26031", 40, "Warehouse A", "Press 1", OrderStatus.Planned, OrderPriority.Normal, 360),
-            ("Billet 6082", "H-26044", 32, "Warehouse A", "Press 2", OrderStatus.InTransit, OrderPriority.Urgent, 150),
-            ("Profile 4711", "H-26031", 120, "Press 1", "Aging Oven", OrderStatus.Done, OrderPriority.Normal, 120),
-            ("Profile 6082", "H-26044", 85, "Press 2", "Aging Oven", OrderStatus.Planned, OrderPriority.Normal, 420),
-            ("Profile 4711", "H-26031", 120, "Aging Oven", "Packing", OrderStatus.InTransit, OrderPriority.Normal, 300),
-            ("Billet 6060", "H-26052", 36, "Warehouse A", "Press 1", OrderStatus.Cancelled, OrderPriority.Normal, 240),
-            ("Profile 6082", "H-26044", 85, "Aging Oven", "Packing", OrderStatus.Done, OrderPriority.Urgent, 90),
-            ("Billet 6082", "H-26058", 28, "Warehouse A", "Press 2", OrderStatus.Planned, OrderPriority.Urgent, 150),
-            ("Profile 4711", "H-26031", 96, "Packing", "Warehouse A", OrderStatus.InTransit, OrderPriority.Normal, 240),
-            ("Profile 6082", "H-26052", 60, "Press 2", "Aging Oven", OrderStatus.Cancelled, OrderPriority.Normal, 200),
-            ("Billet 6060", "H-26052", 44, "Warehouse A", "Press 1", OrderStatus.Done, OrderPriority.Normal, 120),
-            ("Profile 4711", "H-26058", 150, "Press 1", "Aging Oven", OrderStatus.Planned, OrderPriority.Normal, 300),
+            ("H-26031", "H-26031-1", null, "1.2379 ingot", 1, 19.6m, 2.9m, melt, esr, normal, 0, 240),
+            ("H-26031", "H-26031-2", null, "1.2379 ingot", 1, 17.8m, 2.7m, melt, esr, normal, 0, 240),
+            ("H-26031", "H-26031-1A", "H-26031-1", "1.2379 forged bar", 4, 12.4m, 4.2m, forge, heat, normal, 120, 300),
+            ("H-26031", "H-26031-1B", "H-26031-1", "1.2379 forged bar", 3, 9.8m, 3.6m, forge, heat, normal, 130, 320),
+            ("H-26031", "H-26031-2A", "H-26031-2", "1.2379 forged bar", 3, 8.6m, 2.6m, forge, heat, urgent, 140, 200),
+            ("H-26031", "H-26031-2B", "H-26031-2", "1.2379 forged bar", 2, 6.3m, 1.4m, forge, heat, normal, 150, 330),
+            ("H-26044", "H-26044-1", null, "1.3343 ESR ingot", 1, 18.4m, 2.8m, esr, forge, urgent, 230, 60),
+            ("H-26044", "H-26044-2", null, "1.3343 ESR ingot", 1, 18.1m, 2.8m, esr, forge, urgent, 60, 220),
+            ("H-26052", "H-26052-1A", "H-26052-1", "1.2344 forged block", 2, 3.1m, 1.9m, heat, ut, normal, 160, 200),
+            ("H-26052", "H-26052-1B", "H-26052-1", "1.2344 forged block", 2, 4.2m, 1.8m, heat, ut, normal, 170, 220),
+            ("H-26052", "H-26052-1C", "H-26052-1", "1.2344 forged block", 1, 2.4m, 1.2m, heat, ut, normal, 180, 200),
+            ("H-26058", "H-26058-1", null, "1.2344 ingot", 1, 16.0m, 2.6m, melt, esr, normal, 0, 240),
         ];
 
-        var orders = new List<TransportOrder>(rows.Length);
-        for (var i = 0; i < rows.Length; i++)
-        {
-            var row = rows[i];
-            var createdAt = start.AddMinutes(20 * i);
-            var order = new TransportOrder($"TO-2026-{i + 1:D4}", row.Heat, row.Material, row.Quantity, row.From, row.To,
-                row.Priority, createdAt.AddMinutes(row.DueMinutes), createdAt, SeedUser);
+        var orders = rows.Select((r, i) => new TransportOrder(
+            $"TO-2026-{i + 1:D4}", r.Heat, r.Piece, r.Parent, r.Material, r.Pieces, r.Tonnes, r.Metres,
+            r.From, r.To, r.Priority, At(r.Created + r.DueAfter), At(r.Created), PlanningUser)).ToList();
+        TransportOrder Order(int number) => orders[number - 1];
 
-            // Reach the target status through the domain rules so stored data and history are consistent.
-            switch (row.Status)
-            {
-                case OrderStatus.InTransit:
-                    order.TransitionTo(OrderStatus.InTransit, SeedUser, createdAt.AddMinutes(20));
-                    break;
-                case OrderStatus.Done:
-                    order.TransitionTo(OrderStatus.InTransit, SeedUser, createdAt.AddMinutes(20));
-                    order.TransitionTo(OrderStatus.Done, SeedUser, createdAt.AddMinutes(55));
-                    break;
-                case OrderStatus.Cancelled:
-                    order.TransitionTo(OrderStatus.Cancelled, SeedUser, createdAt.AddMinutes(10));
-                    break;
-            }
+        var carrier = Fleet.Default.Single(v => v.Type == VehicleType.HeavyLoadCarrier);
+        var year = utcNow.Year;
 
-            orders.Add(order);
-        }
+        // Two short, heavy ingots: the payload is used up long before the loading length.
+        var first = Transport.Dispatch($"TR-{year}-0001", carrier, [Order(1), Order(2)], DispatchUser, At(40), PartLoadReason.PayloadLimit);
+        first.Complete([Order(1), Order(2)], DispatchUser, At(85));
 
-        return orders;
+        // The forge was waiting for this ingot, so it left alone.
+        var second = Transport.Dispatch($"TR-{year}-0002", carrier, [Order(8)], DispatchUser, At(200), PartLoadReason.UrgentMaterial);
+
+        Order(12).TransitionTo(OrderStatus.Cancelled, PlanningUser, At(30), "Chemical analysis out of specification");
+        Order(11).TransitionTo(OrderStatus.OnHold, QualityUser, At(210), "Hardness below specification, re-test");
+
+        return (orders, [first, second]);
     }
 }

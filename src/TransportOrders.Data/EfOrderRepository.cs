@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using TransportOrders.Core;
 
@@ -36,6 +37,39 @@ public sealed class EfOrderRepository(IDbContextFactory<AppDbContext> contextFac
         // Update attaches the whole aggregate: existing history rows are kept, new ones (Id = 0) are inserted.
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         context.Orders.Update(order);
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Transport>> GetTransportsAsync(CancellationToken cancellationToken = default)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        return await context.Transports
+            .AsNoTracking()
+            .OrderByDescending(t => t.TransportNumber)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<string> NextTransportNumberAsync(DateTime utcNow, CancellationToken cancellationToken = default)
+    {
+        var prefix = $"TR-{utcNow.Year}-";
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        var numbers = await context.Transports
+            .Where(t => t.TransportNumber.StartsWith(prefix))
+            .Select(t => t.TransportNumber)
+            .ToListAsync(cancellationToken);
+        var last = numbers.Select(n => int.Parse(n[prefix.Length..], CultureInfo.InvariantCulture)).DefaultIfEmpty(0).Max();
+        return $"{prefix}{last + 1:D4}";
+    }
+
+    public async Task SaveTransportAsync(Transport transport, IReadOnlyCollection<TransportOrder> orders, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(transport);
+        ArgumentNullException.ThrowIfNull(orders);
+
+        // One SaveChanges is one transaction: the transport and every order change are stored together or not at all.
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        context.Transports.Update(transport);
+        context.Orders.UpdateRange(orders);
         await context.SaveChangesAsync(cancellationToken);
     }
 

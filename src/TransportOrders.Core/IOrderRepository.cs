@@ -12,4 +12,13 @@ public interface IOrderRepository
 
     /// <summary>Saves the order's current state and any new status history entries.</summary>
     Task SaveAsync(TransportOrder order, CancellationToken cancellationToken = default);
+
+    /// <summary>All transports, newest first.</summary>
+    Task<IReadOnlyList<Transport>> GetTransportsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>The next free number, e.g. TR-2026-0007.</summary>
+    Task<string> NextTransportNumberAsync(DateTime utcNow, CancellationToken cancellationToken = default);
+
+    /// <summary>Saves a transport together with its orders in one transaction.</summary>
+    Task SaveTransportAsync(Transport transport, IReadOnlyCollection<TransportOrder> orders, CancellationToken cancellationToken = default);
 }

@@ -6,9 +6,9 @@
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
 
   <!-- Window and header -->
-  <data name="Window_Title" xml:space="preserve"><value>Transport Orders — Extrusion Plant</value></data>
+  <data name="Window_Title" xml:space="preserve"><value>Transport Orders — Special-Steel Plant</value></data>
   <data name="App_Title" xml:space="preserve"><value>Transport Orders</value></data>
-  <data name="App_Subtitle" xml:space="preserve"><value>Internal material transport · aluminium extrusion plant</value></data>
+  <data name="App_Subtitle" xml:space="preserve"><value>Internal material transport · special-steel plant</value></data>
   <data name="Action_Reload" xml:space="preserve"><value>Reload</value></data>
   <data name="Action_Reload_Tip" xml:space="preserve"><value>Reload all orders from the database (F5)</value></data>
   <data name="Language_Tip" xml:space="preserve"><value>Language</value></data>
@@ -17,61 +17,80 @@
   <data name="Scan_NotFound" xml:space="preserve"><value>No order found for “{0}”.</value></data>
 
   <!-- Toolbar -->
-  <data name="Action_Start" xml:space="preserve"><value>_Start</value></data>
+  <data name="Action_PlanLoads" xml:space="preserve"><value>_Plan loads</value></data>
+  <data name="Action_PlanLoads_Tip" xml:space="preserve"><value>Group the waiting orders into full loads and dispatch them (Alt+P)</value></data>
+  <data name="Action_Hold" xml:space="preserve"><value>_Hold</value></data>
+  <data name="Action_Release" xml:space="preserve"><value>_Release</value></data>
+  <data name="Action_Hold_Tip" xml:space="preserve"><value>Quality hold: block the material with a reason, or release it (Alt+H / Alt+R)</value></data>
   <data name="Action_Complete" xml:space="preserve"><value>_Complete</value></data>
+  <data name="Action_Complete_Tip" xml:space="preserve"><value>The transport arrived: every order on it becomes Done (Alt+C)</value></data>
   <data name="Action_Cancel" xml:space="preserve"><value>Ca_ncel</value></data>
-  <data name="Action_Start_Tip" xml:space="preserve"><value>Planned → InTransit (Alt+S)</value></data>
-  <data name="Action_Complete_Tip" xml:space="preserve"><value>InTransit → Done (Alt+C)</value></data>
-  <data name="Action_Cancel_Tip" xml:space="preserve"><value>Planned or InTransit → Cancelled (Alt+N)</value></data>
+  <data name="Action_Cancel_Tip" xml:space="preserve"><value>Cancel the order (Alt+N)</value></data>
   <data name="Filter_All" xml:space="preserve"><value>All</value></data>
-  <data name="Search_Placeholder" xml:space="preserve"><value>Search order number (Ctrl+F)</value></data>
+  <data name="Search_Placeholder" xml:space="preserve"><value>Search order no. (Ctrl+F)</value></data>
   <data name="Search_Tip" xml:space="preserve"><value>Case-insensitive search on the order number, e.g. 0007. Esc clears it.</value></data>
   <data name="Search_Clear" xml:space="preserve"><value>Clear search (Esc)</value></data>
   <data name="Heat_Filter" xml:space="preserve"><value>Heat {0}</value></data>
   <data name="Heat_Filter_Clear" xml:space="preserve"><value>Remove heat filter</value></data>
 
-  <!-- Statuses, priorities, actions -->
+  <!-- Statuses, priorities, vehicles, part-load reasons -->
   <data name="Status_Planned" xml:space="preserve"><value>Planned</value></data>
+  <data name="Status_OnHold" xml:space="preserve"><value>On hold</value></data>
   <data name="Status_InTransit" xml:space="preserve"><value>InTransit</value></data>
   <data name="Status_Done" xml:space="preserve"><value>Done</value></data>
   <data name="Status_Cancelled" xml:space="preserve"><value>Cancelled</value></data>
   <data name="Priority_Normal" xml:space="preserve"><value>Normal</value></data>
   <data name="Priority_Urgent" xml:space="preserve"><value>Urgent</value></data>
-  <data name="Verb_Start" xml:space="preserve"><value>Start</value></data>
-  <data name="Verb_Complete" xml:space="preserve"><value>Complete</value></data>
-  <data name="Verb_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Vehicle_Forklift" xml:space="preserve"><value>Forklift</value></data>
+  <data name="Vehicle_HeavyLoadCarrier" xml:space="preserve"><value>Heavy-load carrier</value></data>
+  <data name="Vehicle_RailWagon" xml:space="preserve"><value>Rail wagon</value></data>
+  <data name="Reason_UrgentMaterial" xml:space="preserve"><value>Urgent material</value></data>
+  <data name="Reason_PayloadLimit" xml:space="preserve"><value>Payload limit reached</value></data>
+  <data name="Reason_EndOfShift" xml:space="preserve"><value>End of shift</value></data>
+  <data name="Reason_NoMatchingMaterial" xml:space="preserve"><value>No matching material</value></data>
 
   <!-- Hint line -->
-  <data name="Hint_None" xml:space="preserve"><value>Select an order to change its status.</value></data>
-  <data name="Hint_Actions" xml:space="preserve"><value>{0} is {1}. You can {2} it.</value></data>
-  <data name="Hint_Or" xml:space="preserve"><value> or </value></data>
+  <data name="Hint_None" xml:space="preserve"><value>Select an order to see what can happen next.</value></data>
+  <data name="Hint_Planned" xml:space="preserve"><value>{0} is waiting to move and leaves with the next full load (Plan loads). It can also be put on hold or cancelled.</value></data>
+  <data name="Hint_OnHold" xml:space="preserve"><value>{0} is on hold: {1}. Release it before it can be loaded, or cancel it.</value></data>
+  <data name="Hint_InTransit" xml:space="preserve"><value>{0} is on transport {1}. Complete the transport when it arrives.</value></data>
   <data name="Hint_Final" xml:space="preserve"><value>{0} is {1}. This is a final status: no further change is possible.</value></data>
 
   <!-- Grid -->
   <data name="Col_OrderNo" xml:space="preserve"><value>Order No.</value></data>
   <data name="Col_Heat" xml:space="preserve"><value>Heat No.</value></data>
   <data name="Col_Material" xml:space="preserve"><value>Material</value></data>
-  <data name="Col_Quantity" xml:space="preserve"><value>Qty (pcs)</value></data>
+  <data name="Col_Length" xml:space="preserve"><value>Length (m)</value></data>
+  <data name="Col_Weight" xml:space="preserve"><value>Weight (t)</value></data>
   <data name="Col_From" xml:space="preserve"><value>From</value></data>
   <data name="Col_To" xml:space="preserve"><value>To</value></data>
   <data name="Col_Priority" xml:space="preserve"><value>Prio</value></data>
   <data name="Col_Due" xml:space="preserve"><value>Due</value></data>
   <data name="Col_Status" xml:space="preserve"><value>Status</value></data>
-  <data name="Col_Created" xml:space="preserve"><value>Created</value></data>
   <data name="Col_Updated" xml:space="preserve"><value>Updated</value></data>
   <data name="Empty_Title" xml:space="preserve"><value>No orders match the current filter and search.</value></data>
   <data name="Empty_Clear" xml:space="preserve"><value>Clear filters</value></data>
   <data name="Format_Short" xml:space="preserve"><value>MM-dd HH:mm</value></data>
   <data name="Format_Long" xml:space="preserve"><value>yyyy-MM-dd HH:mm</value></data>
+  <data name="Number_OneDecimal" xml:space="preserve"><value>{0:0.0}</value></data>
 
   <!-- Details panel -->
   <data name="Details_Empty" xml:space="preserve"><value>Select an order to see its details and history.</value></data>
   <data name="Details_Heat" xml:space="preserve"><value>Heat no.</value></data>
   <data name="Details_ShowHeat" xml:space="preserve"><value>Trace heat</value></data>
   <data name="Details_ShowHeat_Tip" xml:space="preserve"><value>Trace this heat: show every order made from the same melt</value></data>
+  <data name="Details_Piece" xml:space="preserve"><value>Piece</value></data>
+  <data name="Details_FromPiece" xml:space="preserve"><value>from {0}</value></data>
+  <data name="Details_Genealogy" xml:space="preserve"><value>Genealogy</value></data>
+  <data name="Details_Genealogy_Tip" xml:space="preserve"><value>The heat's genealogy: ingots and the pieces made from them</value></data>
   <data name="Details_Material" xml:space="preserve"><value>Material</value></data>
-  <data name="Details_Quantity" xml:space="preserve"><value>{0} pcs</value></data>
+  <data name="Details_Load" xml:space="preserve"><value>Load</value></data>
+  <data name="Details_LoadValue" xml:space="preserve"><value>{0:0.0} m · {1:0.0} t · {2} pcs</value></data>
   <data name="Details_Route" xml:space="preserve"><value>Route</value></data>
+  <data name="Details_Transport" xml:space="preserve"><value>Transport</value></data>
+  <data name="Details_TransportValue" xml:space="preserve"><value>{0} · {1} · {2:P0} of the loading length</value></data>
+  <data name="Details_PartLoad" xml:space="preserve"><value>Part load: {0}</value></data>
+  <data name="Details_HoldReason" xml:space="preserve"><value>Hold reason</value></data>
   <data name="Details_Due" xml:space="preserve"><value>Due</value></data>
   <data name="Details_Overdue" xml:space="preserve"><value>Overdue</value></data>
   <data name="Details_Created" xml:space="preserve"><value>Created</value></data>
@@ -85,14 +104,38 @@
   <data name="Shift_Late" xml:space="preserve"><value>Late shift</value></data>
   <data name="Shift_Night" xml:space="preserve"><value>Night shift</value></data>
   <data name="Shift_Title" xml:space="preserve"><value>{0} · {1:HH:mm}–{2:HH:mm}</value></data>
-  <data name="Kpi_Started" xml:space="preserve"><value>Started</value></data>
+  <data name="Kpi_Trips" xml:space="preserve"><value>Trips</value></data>
+  <data name="Kpi_AvgFill" xml:space="preserve"><value>Avg. fill</value></data>
+  <data name="Kpi_PartLoads" xml:space="preserve"><value>Part loads</value></data>
   <data name="Kpi_Completed" xml:space="preserve"><value>Completed</value></data>
   <data name="Kpi_AvgTransit" xml:space="preserve"><value>Avg. transit</value></data>
-  <data name="Kpi_Open" xml:space="preserve"><value>Open now</value></data>
   <data name="Kpi_Overdue" xml:space="preserve"><value>Overdue</value></data>
+  <data name="Kpi_Open" xml:space="preserve"><value>Open now</value></data>
   <data name="Kpi_Urgent" xml:space="preserve"><value>Urgent open</value></data>
+  <data name="Kpi_OnHold" xml:space="preserve"><value>On hold</value></data>
   <data name="Kpi_Minutes" xml:space="preserve"><value>{0:0} min</value></data>
+  <data name="Kpi_Percent" xml:space="preserve"><value>{0:P0}</value></data>
   <data name="Kpi_None" xml:space="preserve"><value>–</value></data>
+
+  <!-- Load planning dialog -->
+  <data name="Plan_Title" xml:space="preserve"><value>Plan loads</value></data>
+  <data name="Plan_Threshold" xml:space="preserve"><value>A transport must use at least {0:P0} of its loading length. A part load needs a reason, which is recorded.</value></data>
+  <data name="Plan_Length" xml:space="preserve"><value>{0:0.0} m of {1:0.0} m</value></data>
+  <data name="Plan_Weight" xml:space="preserve"><value>{0:0.0} t of {1:0.0} t</value></data>
+  <data name="Plan_Full" xml:space="preserve"><value>Full load</value></data>
+  <data name="Plan_PartLoad" xml:space="preserve"><value>Part load</value></data>
+  <data name="Plan_Reason" xml:space="preserve"><value>Reason</value></data>
+  <data name="Plan_Dispatch" xml:space="preserve"><value>_Dispatch</value></data>
+  <data name="Plan_Empty" xml:space="preserve"><value>No order is waiting to be loaded.</value></data>
+  <data name="Plan_Unplannable" xml:space="preserve"><value>Fits no vehicle: {0}</value></data>
+  <data name="Plan_Dispatched" xml:space="preserve"><value>{0} dispatched: {1} order(s), {2:P0} of the loading length.</value></data>
+  <data name="Plan_OrderLine" xml:space="preserve"><value>{0} · {1} · {2:0.0} m · {3:0.0} t</value></data>
+
+  <!-- Genealogy dialog -->
+  <data name="Genealogy_Title" xml:space="preserve"><value>Genealogy of heat {0}</value></data>
+  <data name="Genealogy_Summary" xml:space="preserve"><value>{0} pieces made from this heat</value></data>
+  <data name="Genealogy_NoOrder" xml:space="preserve"><value>no transport recorded</value></data>
+  <data name="Genealogy_OrderLine" xml:space="preserve"><value>{0} · {1} → {2} · {3}</value></data>
 
   <!-- Status bar -->
   <data name="Count_All" xml:space="preserve"><value>All orders</value></data>
@@ -100,16 +143,31 @@
   <data name="Shown" xml:space="preserve"><value>Shown: {0} of {1}</value></data>
   <data name="Busy_Loading" xml:space="preserve"><value>Loading orders…</value></data>
   <data name="Busy_Saving" xml:space="preserve"><value>Saving {0}…</value></data>
+  <data name="Busy_Dispatching" xml:space="preserve"><value>Dispatching…</value></data>
   <data name="LastAction" xml:space="preserve"><value>{0}: {1} → {2}</value></data>
+  <data name="LastAction_Dispatch" xml:space="preserve"><value>{0} dispatched: {1} order(s), {2:P0}</value></data>
+  <data name="LastAction_Arrived" xml:space="preserve"><value>{0} arrived</value></data>
 
   <!-- Dialogs -->
+  <data name="Dialog_Ok" xml:space="preserve"><value>OK</value></data>
+  <data name="Dialog_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Dialog_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Hold_Title" xml:space="preserve"><value>Quality hold</value></data>
+  <data name="Hold_Prompt" xml:space="preserve"><value>Why is {0} put on hold? The reason is recorded in the history.</value></data>
   <data name="Confirm_Cancel" xml:space="preserve"><value>Cancel order {0}? This cannot be undone.</value></data>
+  <data name="Confirm_Complete" xml:space="preserve"><value>Has transport {0} arrived at {1}? Its {2} order(s) will be marked Done.</value></data>
   <data name="Error_Load" xml:space="preserve"><value>The transport orders could not be loaded.
 
 {0}</value></data>
   <data name="Error_Save" xml:space="preserve"><value>The change to order {0} could not be saved and has been discarded.
 
 {1}</value></data>
+  <data name="Error_SaveTransport" xml:space="preserve"><value>The change to transport {0} could not be saved and has been discarded.
+
+{1}</value></data>
+  <data name="Error_Dispatch" xml:space="preserve"><value>The transport could not be dispatched.
+
+{0}</value></data>
   <data name="Error_Transition" xml:space="preserve"><value>Order {0} cannot change from {1} to {2}.</value></data>
   <data name="Error_Init" xml:space="preserve"><value>The database could not be initialized and the application will close.
 

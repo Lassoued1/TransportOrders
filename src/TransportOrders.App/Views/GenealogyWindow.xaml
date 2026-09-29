@@ -1,0 +1,60 @@
+<Window x:Class="TransportOrders.App.Views.GenealogyWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:TransportOrders.App.ViewModels"
+        xmlns:svc="clr-namespace:TransportOrders.App.Services"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:GenealogyViewModel}"
+        Title="{Binding Title}" Width="620" Height="560" MinWidth="460" MinHeight="360"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource WindowBrush}" Foreground="{StaticResource TextBrush}"
+        FontFamily="Segoe UI" FontSize="13">
+    <DockPanel Margin="20,16">
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+            <TextBlock Text="{Binding Title}" FontSize="19" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding Summary}" Foreground="{StaticResource MutedTextBrush}" Margin="0,4,0,0" />
+        </StackPanel>
+        <Button DockPanel.Dock="Bottom" HorizontalAlignment="Right" Margin="0,12,0,0"
+                Content="{svc:Tr Dialog_Close}" IsCancel="True" />
+
+        <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1" CornerRadius="8" Padding="8">
+            <TreeView ItemsSource="{Binding Roots}" BorderThickness="0" Background="Transparent"
+                      AutomationProperties.Name="Heat genealogy">
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="TreeViewItem">
+                        <Setter Property="IsExpanded" Value="True" />
+                        <Setter Property="Padding" Value="2,3" />
+                    </Style>
+                </TreeView.ItemContainerStyle>
+                <TreeView.ItemTemplate>
+                    <HierarchicalDataTemplate DataType="{x:Type vm:PieceNodeViewModel}" ItemsSource="{Binding Children}">
+                        <Border x:Name="Piece" CornerRadius="6" Padding="8,4" Margin="0,1">
+                            <StackPanel>
+                                <TextBlock>
+                                    <Run Text="{Binding PieceNumber, Mode=OneWay}" FontWeight="SemiBold" />
+                                    <Run Text="  ·  " Foreground="{StaticResource MutedTextBrush}" />
+                                    <Run Text="{Binding Material, Mode=OneWay}" />
+                                </TextBlock>
+                                <ItemsControl ItemsSource="{Binding OrderLines}" Focusable="False">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" FontSize="12" Foreground="{StaticResource MutedTextBrush}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                        <HierarchicalDataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                <Setter TargetName="Piece" Property="Background" Value="{StaticResource SelectionBrush}" />
+                            </DataTrigger>
+                        </HierarchicalDataTemplate.Triggers>
+                    </HierarchicalDataTemplate>
+                </TreeView.ItemTemplate>
+            </TreeView>
+        </Border>
+    </DockPanel>
+</Window>

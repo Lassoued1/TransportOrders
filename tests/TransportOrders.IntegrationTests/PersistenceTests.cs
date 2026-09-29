@@ -1,5 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using TransportOrders.Core;
 using TransportOrders.Data;
@@ -21,7 +23,7 @@ public sealed class PersistenceTests : IDisposable
     private IOrderRepository Repository => _services.GetRequiredService<IOrderRepository>();
 
     [Fact]
-    public async Task Demo_orders_are_seeded_once_with_consistent_history()
+    public async Task Demo_data_is_seeded_once_with_consistent_history_and_transports()
     {
         var first = await Initializer.InitializeAsync();
         var second = await Initializer.InitializeAsync();
@@ -35,27 +37,55 @@ public sealed class PersistenceTests : IDisposable
             Assert.Equal(o.Status, o.History[^1].ToStatus);
             Assert.Null(o.History[0].FromStatus);
             Assert.Equal(o.UpdatedAt, o.History[^1].ChangedAt);
+            Assert.True(o.Weight > 0 && o.LoadingLength > 0);
         });
-        Assert.Equal([4, 3, 3, 2], Enum.GetValues<OrderStatus>().Select(s => orders.Count(o => o.Status == s)));
+        Assert.Equal([7, 1, 1, 2, 1], Enum.GetValues<OrderStatus>().Select(s => orders.Count(o => o.Status == s)));
+
+        var transports = await Repository.GetTransportsAsync();
+        Assert.Equal(2, transports.Count);
+        Assert.All(transports, t => Assert.Equal(t.OrderCount, orders.Count(o => o.TransportNumber == t.TransportNumber)));
+        Assert.Contains(transports, t => t.PartLoadReason == PartLoadReason.PayloadLimit && t.Status == TransportStatus.Done);
+        Assert.Contains(transports, t => t.PartLoadReason == PartLoadReason.UrgentMaterial && t.Status == TransportStatus.InTransit);
     }
 
     [Fact]
-    public async Task Status_change_and_its_history_entry_survive_a_reload()
+    public async Task Dispatched_transport_and_its_orders_are_saved_together()
     {
         await Initializer.InitializeAsync();
-        var order = await Repository.GetByOrderNumberAsync("TO-2026-0001");
-        var changedAt = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
+        var orders = await Repository.GetAllAsync();
+        var plan = LoadPlanner.Plan(orders, Fleet.Default, now);
+        var proposal = plan.Proposals.First(p => p.IsFull);
+        var number = await Repository.NextTransportNumberAsync(now);
 
-        order!.TransitionTo(OrderStatus.InTransit, "driver.test", changedAt);
+        var transport = Transport.Dispatch(number, proposal.Vehicle, proposal.Orders, "dispatch.test", now);
+        await Repository.SaveTransportAsync(transport, proposal.Orders);
+
+        Assert.Equal($"TR-{now.Year}-0003", number);
+        var reloaded = (await Repository.GetAllAsync()).Where(o => o.TransportNumber == number).ToList();
+        Assert.Equal(proposal.Orders.Count, reloaded.Count);
+        Assert.All(reloaded, o =>
+        {
+            Assert.Equal(OrderStatus.InTransit, o.Status);
+            Assert.Equal((number, "dispatch.test"), (o.History[^1].Note, o.History[^1].ChangedBy));
+            Assert.Equal(now, o.History[^1].ChangedAt, TimeSpan.FromMilliseconds(1));
+        });
+        var stored = (await Repository.GetTransportsAsync()).Single(t => t.TransportNumber == number);
+        Assert.Equal((proposal.LoadedLength, proposal.Vehicle.LoadingLength, TransportStatus.InTransit),
+            (stored.LoadedLength, stored.LoadingLength, stored.Status));
+    }
+
+    [Fact]
+    public async Task Hold_reason_survives_a_reload()
+    {
+        await Initializer.InitializeAsync();
+        var order = await Repository.GetByOrderNumberAsync("TO-2026-0003");
+
+        order!.TransitionTo(OrderStatus.OnHold, "qa.test", "Surface cracks");
         await Repository.SaveAsync(order);
 
-        var reloaded = await Repository.GetByIdAsync(order.Id);
-        Assert.Equal(OrderStatus.InTransit, reloaded!.Status);
-        Assert.Equal(2, reloaded.History.Count);
-        Assert.Equal((OrderStatus.Planned, OrderStatus.InTransit, "driver.test"),
-            (reloaded.History[1].FromStatus, reloaded.History[1].ToStatus, reloaded.History[1].ChangedBy));
-        Assert.Equal(changedAt, reloaded.History[1].ChangedAt, TimeSpan.FromMilliseconds(1));
-        Assert.Equal(DateTimeKind.Utc, reloaded.UpdatedAt.Kind);
+        var reloaded = await Repository.GetByOrderNumberAsync("to-2026-0003");
+        Assert.Equal((OrderStatus.OnHold, "Surface cracks"), (reloaded!.Status, reloaded.HoldReason));
     }
 
     [Fact]
@@ -75,10 +105,33 @@ public sealed class PersistenceTests : IDisposable
         await using var context = await factory.CreateDbContextAsync();
         var now = DateTime.UtcNow;
 
-        context.Orders.Add(new TransportOrder("TO-2026-0001", "H-1000", "Billet 6060", 1, "Warehouse A", "Press 1",
-            OrderPriority.Normal, now.AddHours(1), now, "test"));
+        context.Orders.Add(new TransportOrder("TO-2026-0001", "H-1000", "H-1000-1", null, "1.2379 ingot", 1, 5m, 2m,
+            "Melt shop", "ESR plant", OrderPriority.Normal, now.AddHours(1), now, "test"));
 
         await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
+    }
+
+    [Fact]
+    public async Task Database_from_version_2_is_migrated_and_gets_the_steel_demo_data()
+    {
+        // Version 2: schema of the first migration with an aluminium order in it.
+        var factory = _services.GetRequiredService<IDbContextFactory<AppDbContext>>();
+        await using (var context = await factory.CreateDbContextAsync())
+        {
+            await context.GetService<IMigrator>().MigrateAsync("20260923192054_InitialCreate");
+            await context.Database.ExecuteSqlRawAsync(
+                "INSERT INTO TransportOrders (OrderNumber, HeatNumber, Material, Quantity, SourceLocation, TargetLocation, " +
+                "Priority, DueAt, Status, CreatedAt, UpdatedAt) VALUES ('TO-2026-0001', 'H-26031', 'Billet 6060', 40, " +
+                "'Warehouse A', 'Press 1', 'Normal', '2026-03-02 12:00:00', 'Planned', '2026-03-02 08:00:00', '2026-03-02 08:00:00')");
+        }
+
+        var result = await Initializer.InitializeAsync();
+
+        Assert.True(result.Seeded);
+        Assert.Null(result.LegacyBackupPath);
+        var orders = await Repository.GetAllAsync();
+        Assert.Equal(12, orders.Count);
+        Assert.DoesNotContain(orders, o => o.Material.StartsWith("Billet"));
     }
 
     [Fact]
