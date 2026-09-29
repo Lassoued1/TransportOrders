@@ -46,6 +46,13 @@ public sealed class PersistenceTests : IDisposable
         Assert.All(transports, t => Assert.Equal(t.OrderCount, orders.Count(o => o.TransportNumber == t.TransportNumber)));
         Assert.Contains(transports, t => t.PartLoadReason == PartLoadReason.PayloadLimit && t.Status == TransportStatus.Done);
         Assert.Contains(transports, t => t.PartLoadReason == PartLoadReason.UrgentMaterial && t.Status == TransportStatus.InTransit);
+
+        // The demo history names the plant's departments.
+        Assert.All(orders, o => Assert.Equal(DatabaseInitializer.PlanningUser, o.History[0].ChangedBy));
+        Assert.All(transports, t => Assert.Equal(DatabaseInitializer.DispatchUser, t.DispatchedBy));
+        Assert.Equal(DatabaseInitializer.QualityUser, orders.Single(o => o.Status == OrderStatus.OnHold).History[^1].ChangedBy);
+        Assert.Equal(("Planung", "Disposition", "Qualitätssicherung"),
+            (DatabaseInitializer.PlanningUser, DatabaseInitializer.DispatchUser, DatabaseInitializer.QualityUser));
     }
 
     [Fact]

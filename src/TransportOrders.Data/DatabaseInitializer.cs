@@ -15,9 +15,10 @@ public sealed record DatabaseInitializationResult(bool Seeded, string? LegacyBac
 /// </summary>
 public sealed class DatabaseInitializer(IDbContextFactory<AppDbContext> contextFactory, TimeProvider timeProvider)
 {
-    public const string PlanningUser = "Planning";
-    public const string DispatchUser = "Dispatch";
-    public const string QualityUser = "QA";
+    // Demo users are the plant's departments; the demo is presented to German-speaking plants.
+    public const string PlanningUser = "Planung";
+    public const string DispatchUser = "Disposition";
+    public const string QualityUser = "Qualitätssicherung";
 
     public async Task<DatabaseInitializationResult> InitializeAsync(CancellationToken cancellationToken = default)
     {
