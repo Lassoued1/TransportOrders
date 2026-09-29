@@ -81,8 +81,8 @@ public sealed class ApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         Assert.NotEmpty(orders!);
         Assert.All(orders!, o => Assert.Equal("H-26031", o.HeatNumber));
-        Assert.Contains(orders!, o => o.Material == "1.2379 ingot");
-        Assert.Contains(orders!, o => o.Material == "1.2379 forged bar");
+        Assert.Contains(orders!, o => o.Material == "1.2379 Rohblock");
+        Assert.Contains(orders!, o => o.Material == "1.2379 Schmiedestab");
     }
 
     [Fact]

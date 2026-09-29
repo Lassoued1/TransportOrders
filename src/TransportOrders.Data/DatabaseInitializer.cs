@@ -106,24 +106,25 @@ public sealed class DatabaseInitializer(IDbContextFactory<AppDbContext> contextF
             .AddHours(-5);
         DateTime At(int minutes) => start.AddMinutes(minutes);
 
-        const string melt = "Melt shop", esr = "ESR plant", forge = "Forge", heat = "Heat treatment", ut = "UT testing";
+        // Plant data in German, like the department names above: stations, materials and notes.
+        const string melt = "Stahlwerk", esr = "ESU-Anlage", forge = "Schmiede", heat = "Wärmebehandlung", ut = "US-Prüfung";
         const OrderPriority normal = OrderPriority.Normal, urgent = OrderPriority.Urgent;
 
         (string Heat, string Piece, string? Parent, string Material, int Pieces, decimal Tonnes, decimal Metres,
             string From, string To, OrderPriority Priority, int Created, int DueAfter)[] rows =
         [
-            ("H-26031", "H-26031-1", null, "1.2379 ingot", 1, 19.6m, 2.9m, melt, esr, normal, 0, 240),
-            ("H-26031", "H-26031-2", null, "1.2379 ingot", 1, 17.8m, 2.7m, melt, esr, normal, 0, 240),
-            ("H-26031", "H-26031-1A", "H-26031-1", "1.2379 forged bar", 4, 12.4m, 4.2m, forge, heat, normal, 120, 300),
-            ("H-26031", "H-26031-1B", "H-26031-1", "1.2379 forged bar", 3, 9.8m, 3.6m, forge, heat, normal, 130, 320),
-            ("H-26031", "H-26031-2A", "H-26031-2", "1.2379 forged bar", 3, 8.6m, 2.6m, forge, heat, urgent, 140, 200),
-            ("H-26031", "H-26031-2B", "H-26031-2", "1.2379 forged bar", 2, 6.3m, 1.4m, forge, heat, normal, 150, 330),
-            ("H-26044", "H-26044-1", null, "1.3343 ESR ingot", 1, 18.4m, 2.8m, esr, forge, urgent, 230, 60),
-            ("H-26044", "H-26044-2", null, "1.3343 ESR ingot", 1, 18.1m, 2.8m, esr, forge, urgent, 60, 220),
-            ("H-26052", "H-26052-1A", "H-26052-1", "1.2344 forged block", 2, 3.1m, 1.9m, heat, ut, normal, 160, 200),
-            ("H-26052", "H-26052-1B", "H-26052-1", "1.2344 forged block", 2, 4.2m, 1.8m, heat, ut, normal, 170, 220),
-            ("H-26052", "H-26052-1C", "H-26052-1", "1.2344 forged block", 1, 2.4m, 1.2m, heat, ut, normal, 180, 200),
-            ("H-26058", "H-26058-1", null, "1.2344 ingot", 1, 16.0m, 2.6m, melt, esr, normal, 0, 240),
+            ("H-26031", "H-26031-1", null, "1.2379 Rohblock", 1, 19.6m, 2.9m, melt, esr, normal, 0, 240),
+            ("H-26031", "H-26031-2", null, "1.2379 Rohblock", 1, 17.8m, 2.7m, melt, esr, normal, 0, 240),
+            ("H-26031", "H-26031-1A", "H-26031-1", "1.2379 Schmiedestab", 4, 12.4m, 4.2m, forge, heat, normal, 120, 300),
+            ("H-26031", "H-26031-1B", "H-26031-1", "1.2379 Schmiedestab", 3, 9.8m, 3.6m, forge, heat, normal, 130, 320),
+            ("H-26031", "H-26031-2A", "H-26031-2", "1.2379 Schmiedestab", 3, 8.6m, 2.6m, forge, heat, urgent, 140, 200),
+            ("H-26031", "H-26031-2B", "H-26031-2", "1.2379 Schmiedestab", 2, 6.3m, 1.4m, forge, heat, normal, 150, 330),
+            ("H-26044", "H-26044-1", null, "1.3343 ESU-Block", 1, 18.4m, 2.8m, esr, forge, urgent, 230, 60),
+            ("H-26044", "H-26044-2", null, "1.3343 ESU-Block", 1, 18.1m, 2.8m, esr, forge, urgent, 60, 220),
+            ("H-26052", "H-26052-1A", "H-26052-1", "1.2344 Schmiedeblock", 2, 3.1m, 1.9m, heat, ut, normal, 160, 200),
+            ("H-26052", "H-26052-1B", "H-26052-1", "1.2344 Schmiedeblock", 2, 4.2m, 1.8m, heat, ut, normal, 170, 220),
+            ("H-26052", "H-26052-1C", "H-26052-1", "1.2344 Schmiedeblock", 1, 2.4m, 1.2m, heat, ut, normal, 180, 200),
+            ("H-26058", "H-26058-1", null, "1.2344 Rohblock", 1, 16.0m, 2.6m, melt, esr, normal, 0, 240),
         ];
 
         var orders = rows.Select((r, i) => new TransportOrder(
@@ -141,8 +142,8 @@ public sealed class DatabaseInitializer(IDbContextFactory<AppDbContext> contextF
         // The forge was waiting for this ingot, so it left alone.
         var second = Transport.Dispatch($"TR-{year}-0002", carrier, [Order(8)], DispatchUser, At(200), PartLoadReason.UrgentMaterial);
 
-        Order(12).TransitionTo(OrderStatus.Cancelled, PlanningUser, At(30), "Chemical analysis out of specification");
-        Order(11).TransitionTo(OrderStatus.OnHold, QualityUser, At(210), "Hardness below specification, re-test");
+        Order(12).TransitionTo(OrderStatus.Cancelled, PlanningUser, At(30), "Chemische Analyse außerhalb der Spezifikation");
+        Order(11).TransitionTo(OrderStatus.OnHold, QualityUser, At(210), "Härte unter Spezifikation, Nachprüfung");
 
         return (orders, [first, second]);
     }

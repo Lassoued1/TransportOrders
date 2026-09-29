@@ -92,6 +92,11 @@
         <Style x:Key="RightAligned" TargetType="TextBlock">
             <Setter Property="HorizontalAlignment" Value="Right" />
         </Style>
+        <!-- Text that does not fit ends with "…" and shows in full as a tooltip -->
+        <Style x:Key="TrimmedText" TargetType="TextBlock">
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}" />
+        </Style>
         <Style x:Key="Counter" TargetType="StackPanel">
             <Setter Property="Orientation" Value="Horizontal" />
             <Setter Property="Margin" Value="0,0,16,0" />
@@ -260,7 +265,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="14" />
-                <ColumnDefinition Width="280" />
+                <ColumnDefinition Width="262" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -393,7 +398,7 @@
                                 <Setter Property="Background" Value="#F5F7FA" />
                                 <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
                                 <Setter Property="FontWeight" Value="SemiBold" />
-                                <Setter Property="Padding" Value="6,8" />
+                                <Setter Property="Padding" Value="5,8" />
                                 <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
                                 <Setter Property="BorderThickness" Value="0,0,0,1" />
                                 <!-- Long headers such as "Length (m)" wrap instead of widening narrow numeric columns -->
@@ -425,7 +430,7 @@
                                 <Setter Property="Template">
                                     <Setter.Value>
                                         <ControlTemplate TargetType="DataGridCell">
-                                            <Border Background="{TemplateBinding Background}" Padding="6,0">
+                                            <Border Background="{TemplateBinding Background}" Padding="5,0">
                                                 <ContentPresenter VerticalAlignment="Center" />
                                             </Border>
                                         </ControlTemplate>
@@ -440,20 +445,23 @@
                             </Style>
                         </DataGrid.CellStyle>
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="{svc:Tr Col_OrderNo}" Binding="{Binding OrderNumber}" Width="112" FontWeight="SemiBold" />
-                            <DataGridTextColumn Header="{svc:Tr Col_Heat}" Binding="{Binding HeatNumber}" Width="72" />
-                            <DataGridTextColumn Header="{svc:Tr Col_Material}" Binding="{Binding Material}" Width="1.3*" MinWidth="80" />
+                            <DataGridTextColumn Header="{svc:Tr Col_OrderNo}" Binding="{Binding OrderNumber}" Width="106" FontWeight="SemiBold" />
+                            <DataGridTextColumn Header="{svc:Tr Col_Heat}" Binding="{Binding HeatNumber}" Width="68" />
+                            <DataGridTextColumn Header="{svc:Tr Col_Material}" Binding="{Binding Material}" Width="1.15*" MinWidth="80"
+                                                ElementStyle="{StaticResource TrimmedText}" />
                             <DataGridTextColumn Header="{svc:Tr Col_Length}" Binding="{Binding LengthText}" SortMemberPath="LoadingLength"
-                                                Width="60" ElementStyle="{StaticResource RightAligned}" />
+                                                Width="56" ElementStyle="{StaticResource RightAligned}" />
                             <DataGridTextColumn Header="{svc:Tr Col_Weight}" Binding="{Binding WeightText}" SortMemberPath="Weight"
-                                                Width="62" ElementStyle="{StaticResource RightAligned}" />
-                            <DataGridTextColumn Header="{svc:Tr Col_From}" Binding="{Binding SourceLocation}" Width="*" MinWidth="80" />
-                            <DataGridTextColumn Header="{svc:Tr Col_To}" Binding="{Binding TargetLocation}" Width="*" MinWidth="80" />
-                            <DataGridTemplateColumn Header="{svc:Tr Col_Priority}" SortMemberPath="Priority" Width="46"
+                                                Width="58" ElementStyle="{StaticResource RightAligned}" />
+                            <DataGridTextColumn Header="{svc:Tr Col_From}" Binding="{Binding SourceLocation}" Width="*" MinWidth="80"
+                                                ElementStyle="{StaticResource TrimmedText}" />
+                            <DataGridTextColumn Header="{svc:Tr Col_To}" Binding="{Binding TargetLocation}" Width="*" MinWidth="80"
+                                                ElementStyle="{StaticResource TrimmedText}" />
+                            <DataGridTemplateColumn Header="{svc:Tr Col_Priority}" SortMemberPath="Priority" Width="40"
                                                     CellTemplate="{StaticResource PriorityFlag}" />
                             <DataGridTemplateColumn Header="{svc:Tr Col_Due}" SortMemberPath="DueAt" Width="Auto" MinWidth="62"
                                                     CellTemplate="{StaticResource DueCell}" />
-                            <DataGridTemplateColumn Header="{svc:Tr Col_Status}" SortMemberPath="Status" Width="100"
+                            <DataGridTemplateColumn Header="{svc:Tr Col_Status}" SortMemberPath="Status" Width="98"
                                                     CellTemplate="{StaticResource StatusBadge}" />
                             <DataGridTextColumn Header="{svc:Tr Col_Updated}" Binding="{Binding UpdatedText}" SortMemberPath="UpdatedAt" Width="Auto" MinWidth="72" />
                         </DataGrid.Columns>
@@ -529,7 +537,7 @@
                                         <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
                                     <TextBlock Grid.Row="0" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Heat}" />
-                                    <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6">
+                                    <WrapPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,6">
                                         <TextBlock Text="{Binding HeatNumber}" FontWeight="SemiBold" VerticalAlignment="Center" />
                                         <Button Style="{StaticResource LinkButton}" Margin="8,-3,0,-3" Padding="6,1"
                                                 Foreground="{StaticResource AccentBrush}"
@@ -540,7 +548,7 @@
                                                 <TextBlock Text="{svc:Tr Details_ShowHeat}" />
                                             </StackPanel>
                                         </Button>
-                                    </StackPanel>
+                                    </WrapPanel>
                                     <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="{svc:Tr Details_Piece}" />
                                     <WrapPanel Grid.Row="1" Grid.Column="1" Margin="0,0,0,6">
                                         <TextBlock Text="{Binding PieceText}" VerticalAlignment="Center" TextWrapping="Wrap" />
