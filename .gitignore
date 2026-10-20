@@ -1,5 +1,7 @@
 # Build output
 bin/
+artifacts/
+*.driver.lock
 obj/
 [Dd]ebug/
 [Rr]elease/

@@ -44,8 +44,8 @@ public sealed class PersistenceTests : IDisposable
         var transports = await Repository.GetTransportsAsync();
         Assert.Equal(2, transports.Count);
         Assert.All(transports, t => Assert.Equal(t.OrderCount, orders.Count(o => o.TransportNumber == t.TransportNumber)));
-        Assert.Contains(transports, t => t.PartLoadReason == PartLoadReason.PayloadLimit && t.Status == TransportStatus.Done);
-        Assert.Contains(transports, t => t.PartLoadReason == PartLoadReason.UrgentMaterial && t.Status == TransportStatus.InTransit);
+        Assert.Contains(transports, t => !t.IsPartLoad && t.Status == TransportStatus.Done);
+        Assert.Contains(transports, t => t.Vehicle == VehicleType.BasketShuttle && t.Status == TransportStatus.InTransit);
 
         // The demo history names the plant's departments.
         Assert.All(orders, o => Assert.Equal(DatabaseInitializer.PlanningUser, o.History[0].ChangedBy));
@@ -59,10 +59,11 @@ public sealed class PersistenceTests : IDisposable
     public async Task Dispatched_transport_and_its_orders_are_saved_together()
     {
         await Initializer.InitializeAsync();
+        await new ExtrusionSimulator(Repository, TimeProvider.System).StepAsync();
         var now = DateTime.UtcNow;
         var orders = await Repository.GetAllAsync();
-        var plan = LoadPlanner.Plan(orders, Fleet.Default, now);
-        var proposal = plan.Proposals.First(p => p.IsFull);
+        var plan = LoadPlanner.Plan(orders, Fleet.Extrusion, now);
+        var proposal = plan.Proposals.First(p => p.IsFull && p.SourceLocation.StartsWith("PRESS-"));
         var number = await Repository.NextTransportNumberAsync(now);
 
         var transport = Transport.Dispatch(number, proposal.Vehicle, proposal.Orders, "dispatch.test", now);
@@ -119,7 +120,7 @@ public sealed class PersistenceTests : IDisposable
     }
 
     [Fact]
-    public async Task Database_from_version_2_is_migrated_and_gets_the_steel_demo_data()
+    public async Task Database_from_version_2_is_migrated_and_gets_the_extrusion_demo_data()
     {
         // Version 2: schema of the first migration with an aluminium order in it.
         var factory = _services.GetRequiredService<IDbContextFactory<AppDbContext>>();
@@ -139,6 +140,7 @@ public sealed class PersistenceTests : IDisposable
         var orders = await Repository.GetAllAsync();
         Assert.Equal(12, orders.Count);
         Assert.DoesNotContain(orders, o => o.Material.StartsWith("Billet"));
+        Assert.All(orders, o => Assert.StartsWith("EN AW-", o.Material));
     }
 
     [Fact]

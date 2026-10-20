@@ -1,0 +1,50 @@
+<UserControl x:Class="TransportOrders.App.Views.RecipeOverview" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:svc="clr-namespace:TransportOrders.App.Services"
+ Background="{StaticResource WindowBrush}" Foreground="{StaticResource TextBrush}" FontFamily="Segoe UI" FontSize="13">
+ <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="18">
+  <TextBlock Text="{svc:Tr Recipe_Tab}" FontSize="24" FontWeight="SemiBold"/>
+  <TextBlock Text="{Binding Status}" TextWrapping="Wrap" Margin="0,8,0,12"/>
+  <DataGrid ItemsSource="{Binding Recipes}" SelectedItem="{Binding SelectedRecipe}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" Height="190">
+   <DataGrid.Columns>
+    <DataGridTextColumn Header="{svc:Tr Recipe_Id}" Binding="{Binding Recipe.Id}" Width="180"/>
+    <DataGridTextColumn Header="{svc:Tr Recipe_Revision}" Binding="{Binding Recipe.Revision}" Width="80"/>
+    <DataGridTextColumn Header="{svc:Tr Col_Status}" Binding="{Binding Status}" Width="140"/>
+    <DataGridTextColumn Header="{svc:Tr Recipe_Alloy}" Binding="{Binding Recipe.Alloy}" Width="100"/>
+    <DataGridTextColumn Header="{svc:Tr Recipe_Temperature}" Binding="{Binding Recipe.TargetTemperature}" Width="150"/>
+    <DataGridTextColumn Header="{svc:Tr Recipe_Heating}" Binding="{Binding Recipe.HeatingMinutes}" Width="140"/>
+    <DataGridTextColumn Header="{svc:Tr Recipe_Holding}" Binding="{Binding Recipe.HoldingMinutes}" Width="140"/>
+    <DataGridTextColumn Header="{svc:Tr Recipe_Cooling}" Binding="{Binding Recipe.CoolingMinutes}" Width="140"/>
+   </DataGrid.Columns>
+  </DataGrid>
+  <StackPanel Orientation="Horizontal" Margin="0,10">
+   <Button Content="{svc:Tr Recipe_New}" Command="{Binding NewCommand}" Margin="0,0,10,0"/>
+   <Button Content="{svc:Tr Recipe_Reload}" Command="{Binding LoadSelectionCommand}"/>
+  </StackPanel>
+  <UniformGrid Columns="6">
+   <StackPanel Margin="0,0,10,0"><TextBlock Text="{svc:Tr Recipe_Id}"/><TextBox Text="{Binding Identifier,UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IdentifierReadOnly}"/></StackPanel>
+   <StackPanel Margin="0,0,10,0"><TextBlock Text="{svc:Tr Recipe_Alloy}"/><TextBox Text="{Binding Alloy,UpdateSourceTrigger=PropertyChanged}"/></StackPanel>
+   <StackPanel Margin="0,0,10,0"><TextBlock Text="{svc:Tr Recipe_Temperature}"/><TextBox Text="{Binding Temperature,UpdateSourceTrigger=PropertyChanged}"/></StackPanel>
+   <StackPanel Margin="0,0,10,0"><TextBlock Text="{svc:Tr Recipe_Heating}"/><TextBox Text="{Binding Heating,UpdateSourceTrigger=PropertyChanged}"/></StackPanel>
+   <StackPanel Margin="0,0,10,0"><TextBlock Text="{svc:Tr Recipe_Holding}"/><TextBox Text="{Binding Holding,UpdateSourceTrigger=PropertyChanged}"/></StackPanel>
+   <StackPanel><TextBlock Text="{svc:Tr Recipe_Cooling}"/><TextBox Text="{Binding Cooling,UpdateSourceTrigger=PropertyChanged}"/></StackPanel>
+  </UniformGrid>
+  <TextBlock Text="{svc:Tr Recipe_Reason}" Margin="0,10,0,4"/>
+  <TextBox Text="{Binding Reason,UpdateSourceTrigger=PropertyChanged}" MaxLength="1000"/>
+  <StackPanel Orientation="Horizontal" Margin="0,10">
+   <Button Content="{svc:Tr Recipe_Save}" Command="{Binding SaveCommand}" Margin="0,0,10,0"/>
+   <Button Content="{svc:Tr Recipe_Validate}" Command="{Binding ValidateCommand}" Margin="0,0,10,0"/>
+   <Button Content="{svc:Tr Recipe_Archive}" Command="{Binding ArchiveCommand}"/>
+  </StackPanel>
+  <TextBlock Text="{svc:Tr Recipe_History}" FontSize="16" FontWeight="SemiBold" Margin="0,6,0,8"/>
+  <DataGrid ItemsSource="{Binding History}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" Height="190">
+   <DataGrid.Columns>
+    <DataGridTextColumn Header="{svc:Tr Alarm_Raised}" Binding="{Binding Time}" Width="155"/>
+    <DataGridTextColumn Header="{svc:Tr Alarm_Actor}" Binding="{Binding Actor}" Width="180"/>
+    <DataGridTextColumn Header="{svc:Tr Alarm_Action}" Binding="{Binding Action}" Width="120"/>
+    <DataGridTextColumn Header="{svc:Tr Recipe_Revision}" Binding="{Binding Revision}" Width="80"/>
+    <DataGridTextColumn Header="{svc:Tr Recipe_Parameters}" Binding="{Binding Parameters}" Width="310"/>
+    <DataGridTextColumn Header="{svc:Tr Recipe_Reason}" Binding="{Binding Reason}" Width="*" MinWidth="160"/>
+   </DataGrid.Columns>
+  </DataGrid>
+ </StackPanel></ScrollViewer>
+</UserControl>

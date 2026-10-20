@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 
 namespace TransportOrders.Core;
 
@@ -40,6 +40,12 @@ public sealed partial class TransportOrder
         DateTime dueAtUtc,
         DateTime createdAtUtc,
         string createdBy)
+        : this(orderNumber, heatNumber, pieceNumber, parentPieceNumber, material, quantity, weight, loadingLength,
+            sourceLocation, targetLocation, priority, dueAtUtc, createdAtUtc, createdBy, false) { }
+
+    private TransportOrder(string orderNumber, string heatNumber, string pieceNumber, string? parentPieceNumber,
+        string material, int quantity, decimal weight, decimal loadingLength, string sourceLocation, string targetLocation,
+        OrderPriority priority, DateTime dueAtUtc, DateTime createdAtUtc, string createdBy, bool reusableBasket)
     {
         if (string.IsNullOrWhiteSpace(orderNumber) || !OrderNumberPattern().IsMatch(orderNumber))
         {
@@ -49,8 +55,8 @@ public sealed partial class TransportOrder
         HeatNumber = Identifier(heatNumber, nameof(heatNumber));
         PieceNumber = Identifier(pieceNumber, nameof(pieceNumber));
         ParentPieceNumber = parentPieceNumber is null ? null : Identifier(parentPieceNumber, nameof(parentPieceNumber));
-        if (!PieceNumber.StartsWith(HeatNumber, StringComparison.Ordinal)
-            || (ParentPieceNumber is not null && !ParentPieceNumber.StartsWith(HeatNumber, StringComparison.Ordinal)))
+        if (!reusableBasket && (!PieceNumber.StartsWith(HeatNumber, StringComparison.Ordinal)
+            || (ParentPieceNumber is not null && !ParentPieceNumber.StartsWith(HeatNumber, StringComparison.Ordinal))))
         {
             throw new ArgumentException("Piece numbers must start with the heat number they belong to.", nameof(pieceNumber));
         }
@@ -95,6 +101,17 @@ public sealed partial class TransportOrder
     }
 
     public int Id { get; private set; }
+    public int BasketContentSequence { get; private set; } = 1;
+
+    public static TransportOrder ForBasket(string number, Basket basket, MaterialLot lot, string target,
+        OrderPriority priority, DateTime due, DateTime now, string user)
+    {
+        if (basket.IsEmpty || basket.IsMoving || basket.LocationId is null || basket.MaterialLotNumber != lot.Number)
+            throw new TransportRuleException("A basket order requires its current stationary load.");
+        return new TransportOrder(number, lot.BatchNumber, basket.Number, lot.Number, lot.Material, basket.Quantity,
+            basket.Weight, basket.LoadingLength, basket.LocationId, target, priority, due, now, user, true)
+            { BasketContentSequence = basket.ContentSequence };
+    }
 
     public string OrderNumber { get; private set; } = string.Empty;
 

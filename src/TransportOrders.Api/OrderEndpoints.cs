@@ -39,10 +39,55 @@ public static class OrderEndpoints
             .WithName("GetLoadPlan")
             .WithSummary("Proposed full loads for the orders waiting to move. A calculation only: nothing is dispatched.");
 
+        app.MapGet("/api/plant", async (IOrderRepository repository, CancellationToken cancellationToken) =>
+        {
+            var state = await repository.GetPlantStateAsync(cancellationToken);
+            var baskets = state.Locate();
+            return TypedResults.Ok(new
+            {
+                MaterialLots = state.MaterialLots,
+                Equipment = state.Equipment.Select(e => new { e.Id, e.Kind, e.LocationId, e.Status, e.Mode, e.Condition, e.ActiveOperation, e.Version, e.History }),
+                Recipes = state.Recipes,
+                Packages = state.Packages,
+                EmptyReturns = state.Returns,
+                OvenCycles = state.Cycles.Select(c => new { c.Id, c.EquipmentId, c.RecipeId, c.Phase, c.ElapsedMinutes,
+                    c.TotalMinutes, c.SimulatedTemperature, c.TargetTemperature, c.StartedAt, c.UpdatedAt, c.CompletedAt, c.Load, c.Version }),
+                Stations = state.Locations.Select(s => new
+                {
+                    s.Id, s.Kind, s.Capacity,
+                    Occupied = state.Occupied(s.Id),
+                    Reserved = state.Reserved(s.Id),
+                }),
+                Baskets = baskets.Select(b => new
+                {
+                    b.BasketNumber, MaterialLotNumber = b.Basket.CurrentMaterialLotNumber, LastMaterialLotNumber = b.Basket.MaterialLotNumber,
+                    b.Basket.ContentSequence, b.Basket.IsEmpty, BatchNumber = b.Basket.IsEmpty ? null : b.MaterialLot.BatchNumber,
+                    OrderNumber = b.Order?.OrderNumber, Material = b.Basket.IsEmpty ? null : b.MaterialLot.Material,
+                    b.Basket.Quantity, b.Location, b.IsMoving, b.IsShipped,
+                    b.Basket.ReservedLocationId, b.Basket.ActiveTransportNumber, b.Basket.ActiveReturnId, b.Basket.History,
+                    SourceLocation = b.Order?.SourceLocation, TargetLocation = b.Order?.TargetLocation, Status = b.Order?.Status,
+                }),
+            });
+        }).WithTags("Plant").WithSummary("Basket positions and occupied or reserved station capacity.");
+        app.MapGet("/api/packages/{number}/label", async (string number, IOrderRepository repository, CancellationToken cancellationToken) =>
+        {
+            var package = (await repository.GetPlantStateAsync(cancellationToken)).Packages.FirstOrDefault(p => p.Number == number);
+            return package?.LabelText is { } label ? (IResult)Results.Text(label, "text/plain; charset=utf-8") : Results.NotFound();
+        }).WithTags("Packing").WithSummary("Approved package label as printable text; unapproved or unknown packages return 404.");
+        app.MapGet("/api/schedule", async (IOrderRepository repository, TimeProvider clock, CancellationToken cancellationToken) =>
+            TypedResults.Ok(ProductionScheduler.Plan(await repository.GetPlantStateAsync(cancellationToken), clock.GetUtcNow().UtcDateTime)))
+            .WithTags("Scheduling").WithSummary("Next eligible action, compatible oven batches and current blocking reasons. Read-only calculation.");
+        app.MapGet("/api/plc", async (IOrderRepository repository, CancellationToken cancellationToken) =>
+        {
+            var state = await repository.GetPlantStateAsync(cancellationToken);
+            return TypedResults.Ok(new { Channel = "Persistent demo PLC", Settings = state.PlcSimulation,
+                PlcCommand.TimeoutSeconds, PlcCommand.MaxAttempts, Commands = state.PlcCommands });
+        }).WithTags("PLC").WithSummary("Durable transfer envelopes, acknowledgement state and retry history. Read-only; no live PLC protocol.");
+
         app.MapGet("/api/heats/{heatNumber}/genealogy", GetGenealogyAsync)
             .WithTags("Traceability")
             .WithName("GetHeatGenealogy")
-            .WithSummary("Everything made from one heat as a tree: ingots and the pieces made from them, with their orders.");
+            .WithSummary("Material batch genealogy: billet batches, loaded baskets and their transport history.");
 
         app.MapGet("/api/shift-summary", GetShiftSummaryAsync)
             .WithTags("Shift")
@@ -59,7 +104,7 @@ public static class OrderEndpoints
         IOrderRepository repository, TimeProvider clock, CancellationToken cancellationToken)
     {
         var orders = await repository.GetAllAsync(cancellationToken);
-        return TypedResults.Ok(LoadPlanDto.From(LoadPlanner.Plan(orders, Fleet.Default, clock.GetUtcNow().UtcDateTime)));
+        return TypedResults.Ok(LoadPlanDto.From(LoadPlanner.Plan(orders, Fleet.Extrusion, clock.GetUtcNow().UtcDateTime)));
     }
 
     private static async Task<Results<Ok<GenealogyDto>, NotFound>> GetGenealogyAsync(

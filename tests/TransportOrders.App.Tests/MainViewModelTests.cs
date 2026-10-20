@@ -1,3 +1,4 @@
+using System.IO;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using TransportOrders.App.Services;
@@ -16,11 +17,11 @@ public class MainViewModelTests
     private readonly FakeDialogs _dialogs = new();
     private readonly Localizer _localizer = new();
 
-    // Forge → Heat treatment: 0001 + 0002 fill a carrier to 90 %. ESR → Forge: one urgent, overdue ingot.
+    // Generic routes exercise the UI independently of the extrusion layout. 0001 + 0002 fill a crane to 90 %.
     private readonly FakeOrderRepository _repository = new FakeOrderRepository(Now.UtcDateTime.AddHours(-2))
-        .Add("TO-2026-0001", "H-1", "H-1-1A", "H-1-1", 5.5m, 10m)
-        .Add("TO-2026-0002", "H-1", "H-1-1B", "H-1-1", 5.3m, 10m)
-        .Add("TO-2026-0003", "H-2", "H-2-1", null, 2.8m, 18m, "ESR plant", "Forge", OrderPriority.Urgent, TimeSpan.FromHours(1))
+        .Add("TO-2026-0001", "H-1", "H-1-1A", "H-1-1", 6.3m, 2m)
+        .Add("TO-2026-0002", "H-1", "H-1-1B", "H-1-1", 6.3m, 2m)
+        .Add("TO-2026-0003", "H-2", "H-2-1", null, 2.8m, 1.8m, "ESR plant", "Forge", OrderPriority.Urgent, TimeSpan.FromHours(1))
         .Add("TO-2026-0004", "H-2", "H-2-2", null, 2.8m, 18m, "ESR plant", "Forge", OrderPriority.Urgent)
         .Add("TO-2026-0005", "H-3", "H-3-1", null, 1.2m, 2m, "Heat treatment", "UT testing")
         .Add("TO-2026-0006", "H-4", "H-4-1", null, 2.6m, 16m, "Melt shop", "ESR plant")
@@ -31,7 +32,7 @@ public class MainViewModelTests
     private async Task<MainViewModel> LoadedViewModelAsync()
     {
         var vm = new MainViewModel(_repository, _messages, _dialogs, _localizer, new FakeUser("driver.test"), _clock,
-            TimeZoneInfo.Utc, NullLogger<MainViewModel>.Instance);
+            TimeZoneInfo.Utc, NullLogger<MainViewModel>.Instance, new TestOperatorClient(_repository, _clock, "driver.test"));
         await vm.LoadAsync();
         return vm;
     }
@@ -93,11 +94,13 @@ public class MainViewModelTests
     public async Task Plan_loads_dispatches_a_full_load_and_records_it_on_every_order()
     {
         var vm = await LoadedViewModelAsync();
+        Select(vm, "TO-2026-0004");
+        await vm.CompleteTransportCommand.ExecuteAsync(null);
 
         vm.PlanLoadsCommand.Execute(null);
         var plan = _dialogs.LoadPlan!;
         var full = plan.Proposals.Single(p => p.IsFull);
-        Assert.Equal(("Heavy-load carrier", "Forge → Heat treatment", "90%"), (full.VehicleText, full.RouteText, full.FillText));
+        Assert.Equal(("Overhead crane", "Forge → Heat treatment", "90%"), (full.VehicleText, full.RouteText, full.FillText));
         Assert.True(full.DispatchCommand.CanExecute(null));
 
         await full.DispatchCommand.ExecuteAsync(null);
@@ -108,7 +111,7 @@ public class MainViewModelTests
             Assert.Equal((OrderStatus.InTransit, "TR-2026-0002"), (Row(vm, n).Status, Row(vm, n).TransportNumber));
             Assert.Equal(("driver.test", "TR-2026-0002"), (_repository.LastStoredChange(n).ChangedBy, _repository.LastStoredChange(n).Note));
         });
-        Assert.Equal((1, 3), (vm.PlannedCount, vm.InTransitCount));
+        Assert.Equal((1, 2), (vm.PlannedCount, vm.InTransitCount));
         Assert.Equal("TR-2026-0002 dispatched: 2 order(s), 90%", vm.LastAction);
         Assert.Single(plan.Proposals);   // the plan was recalculated: only the urgent ingot is left
     }
@@ -117,6 +120,8 @@ public class MainViewModelTests
     public async Task A_part_load_can_only_be_dispatched_with_a_reason_which_is_recorded()
     {
         var vm = await LoadedViewModelAsync();
+        Select(vm, "TO-2026-0004");
+        await vm.CompleteTransportCommand.ExecuteAsync(null);
         vm.PlanLoadsCommand.Execute(null);
         var partLoad = _dialogs.LoadPlan!.Proposals.Single(p => p.IsPartLoad);
         Assert.Equal(nameof(PartLoadReason.UrgentMaterial), partLoad.SelectedReason);   // suggested: urgent, overdue ingot
@@ -213,14 +218,14 @@ public class MainViewModelTests
 
         vm.ShowGenealogyCommand.Execute(null);
         var tree = _dialogs.Genealogy!;
-        Assert.Equal("Genealogy of heat H-1", tree.Title);
+        Assert.Equal("Material traceability · H-1", tree.Title);
         var ingot = Assert.Single(tree.Roots);
         Assert.Equal(("H-1-1", "no transport recorded"), (ingot.PieceNumber, ingot.Material));
         Assert.Equal([true, false], ingot.Children.Select(c => c.IsCurrent));
 
         vm.ShowHeatCommand.Execute(null);
         Assert.Equal(["TO-2026-0001", "TO-2026-0002"], Visible(vm));
-        Assert.Equal("Heat H-1", vm.HeatFilterLabel);
+        Assert.Equal("Batch H-1", vm.HeatFilterLabel);
     }
 
     [Fact]

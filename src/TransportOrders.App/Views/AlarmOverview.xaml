@@ -1,0 +1,37 @@
+<UserControl x:Class="TransportOrders.App.Views.AlarmOverview"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:svc="clr-namespace:TransportOrders.App.Services" Background="{StaticResource WindowBrush}"
+ Foreground="{StaticResource TextBrush}" FontFamily="Segoe UI" FontSize="13">
+ <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="18">
+  <TextBlock Text="{svc:Tr Alarm_Tab}" FontSize="24" FontWeight="SemiBold"/>
+  <TextBlock Text="{Binding Summary}" Margin="0,8,0,12"/>
+  <TextBlock Text="{svc:Tr Alarm_Guide}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+  <DataGrid ItemsSource="{Binding Alarms}" SelectedItem="{Binding SelectedAlarm}" IsReadOnly="True"
+   AutoGenerateColumns="False" CanUserAddRows="False" Height="270" MinRowHeight="34">
+   <DataGrid.Columns>
+    <DataGridTextColumn Header="{svc:Tr Alarm_Source}" Binding="{Binding Alarm.Source}" Width="140"/>
+    <DataGridTextColumn Header="{svc:Tr Alarm_Message}" Binding="{Binding Message}" Width="*" MinWidth="300"/>
+    <DataGridTextColumn Header="{svc:Tr Col_Status}" Binding="{Binding State}" Width="120"/>
+    <DataGridTextColumn Header="{svc:Tr Alarm_Raised}" Binding="{Binding Raised}" Width="160"/>
+    <DataGridTextColumn Header="{svc:Tr Alarm_Acknowledgement}" Binding="{Binding Acknowledgement}" Width="240"/>
+   </DataGrid.Columns>
+  </DataGrid>
+  <TextBlock Text="{Binding SelectedAlarm.Alarm.Detail}" TextWrapping="Wrap" Margin="0,8"/>
+  <TextBlock Text="{svc:Tr Alarm_Reason}"/>
+  <TextBox Text="{Binding Reason,UpdateSourceTrigger=PropertyChanged}" MaxLength="1000" Margin="0,6"/>
+  <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+   <Button Content="{svc:Tr Alarm_Acknowledge}" Command="{Binding AcknowledgeCommand}" Margin="0,0,10,0"/>
+   <Button Content="{svc:Tr Alarm_RefreshSelection}" Command="{Binding RefreshSelectionCommand}"/>
+  </StackPanel>
+  <TextBlock Text="{svc:Tr Alarm_History}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
+  <DataGrid ItemsSource="{Binding History}" IsReadOnly="True" AutoGenerateColumns="False" CanUserAddRows="False" Height="180">
+   <DataGrid.Columns>
+    <DataGridTextColumn Header="{svc:Tr Alarm_Raised}" Binding="{Binding Time}" Width="160"/>
+    <DataGridTextColumn Header="{svc:Tr Alarm_Actor}" Binding="{Binding Actor}" Width="180"/>
+    <DataGridTextColumn Header="{svc:Tr Alarm_Action}" Binding="{Binding Action}" Width="130"/>
+    <DataGridTextColumn Header="{svc:Tr Alarm_Note}" Binding="{Binding Note}" Width="*" MinWidth="280"/>
+   </DataGrid.Columns>
+  </DataGrid>
+ </StackPanel></ScrollViewer>
+</UserControl>

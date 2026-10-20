@@ -6,14 +6,14 @@
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
 
   <!-- Window and header -->
-  <data name="Window_Title" xml:space="preserve"><value>Transportaufträge — Edelstahlwerk</value></data>
-  <data name="App_Title" xml:space="preserve"><value>Transportaufträge</value></data>
-  <data name="App_Subtitle" xml:space="preserve"><value>Innerbetrieblicher Materialtransport · Edelstahlwerk</value></data>
+  <data name="Window_Title" xml:space="preserve"><value>Transportaufträge — Aluminium-Strangpresswerk</value></data>
+  <data name="App_Title" xml:space="preserve"><value>Transportaufträge · Extrusion</value></data>
+  <data name="App_Subtitle" xml:space="preserve"><value>Korblogistik · Pressen, Auslagerungsöfen und Verpackung</value></data>
   <data name="Action_Reload" xml:space="preserve"><value>Neu laden</value></data>
   <data name="Action_Reload_Tip" xml:space="preserve"><value>Alle Aufträge neu aus der Datenbank laden (F5)</value></data>
   <data name="Language_Tip" xml:space="preserve"><value>Sprache</value></data>
   <data name="Scan_Placeholder" xml:space="preserve"><value>Barcode scannen…</value></data>
-  <data name="Scan_Tip" xml:space="preserve"><value>Auftragsnummer scannen oder eingeben, dann Enter drücken</value></data>
+  <data name="Scan_Tip" xml:space="preserve"><value>Auftrags- oder Korbnummer scannen, dann Enter drücken. Ein Korb wählt seinen neuesten Auftrag.</value></data>
   <data name="Scan_NotFound" xml:space="preserve"><value>Kein Auftrag für „{0}“ gefunden.</value></data>
 
   <!-- Toolbar -->
@@ -27,11 +27,11 @@
   <data name="Action_Cancel" xml:space="preserve"><value>St_ornieren</value></data>
   <data name="Action_Cancel_Tip" xml:space="preserve"><value>Auftrag stornieren (Alt+O)</value></data>
   <data name="Filter_All" xml:space="preserve"><value>Alle</value></data>
-  <data name="Search_Placeholder" xml:space="preserve"><value>Auftrag suchen (Strg+F)</value></data>
-  <data name="Search_Tip" xml:space="preserve"><value>Suche nach Auftragsnummer, ohne Groß-/Kleinschreibung, z. B. 0007. Esc löscht die Eingabe.</value></data>
+  <data name="Search_Placeholder" xml:space="preserve"><value>Auftrag, Korb oder Charge (Strg+F)</value></data>
+  <data name="Search_Tip" xml:space="preserve"><value>Aufträge, Körbe oder Materialchargen suchen. Esc löscht die Eingabe.</value></data>
   <data name="Search_Clear" xml:space="preserve"><value>Suche löschen (Esc)</value></data>
-  <data name="Heat_Filter" xml:space="preserve"><value>Schmelze {0}</value></data>
-  <data name="Heat_Filter_Clear" xml:space="preserve"><value>Schmelzenfilter entfernen</value></data>
+  <data name="Heat_Filter" xml:space="preserve"><value>Charge {0}</value></data>
+  <data name="Heat_Filter_Clear" xml:space="preserve"><value>Chargenfilter entfernen</value></data>
 
   <!-- Statuses, priorities, vehicles, part-load reasons -->
   <data name="Status_Planned" xml:space="preserve"><value>Geplant</value></data>
@@ -58,7 +58,7 @@
 
   <!-- Grid -->
   <data name="Col_OrderNo" xml:space="preserve"><value>Auftrag</value></data>
-  <data name="Col_Heat" xml:space="preserve"><value>Schmelze</value></data>
+  <data name="Col_Heat" xml:space="preserve"><value>Charge</value></data>
   <data name="Col_Material" xml:space="preserve"><value>Material</value></data>
   <data name="Col_Length" xml:space="preserve"><value>Länge (m)</value></data>
   <data name="Col_Weight" xml:space="preserve"><value>Gewicht (t)</value></data>
@@ -76,13 +76,13 @@
 
   <!-- Details panel -->
   <data name="Details_Empty" xml:space="preserve"><value>Wählen Sie einen Auftrag, um Details und Verlauf zu sehen.</value></data>
-  <data name="Details_Heat" xml:space="preserve"><value>Schmelze</value></data>
+  <data name="Details_Heat" xml:space="preserve"><value>Materialcharge</value></data>
   <data name="Details_ShowHeat" xml:space="preserve"><value>Rückverfolgen</value></data>
-  <data name="Details_ShowHeat_Tip" xml:space="preserve"><value>Schmelze rückverfolgen: alle Aufträge aus derselben Schmelze anzeigen</value></data>
-  <data name="Details_Piece" xml:space="preserve"><value>Teil</value></data>
+  <data name="Details_ShowHeat_Tip" xml:space="preserve"><value>Alle Körbe und Bewegungen dieser Materialcharge anzeigen</value></data>
+  <data name="Details_Piece" xml:space="preserve"><value>Korb</value></data>
   <data name="Details_FromPiece" xml:space="preserve"><value>aus {0}</value></data>
   <data name="Details_Genealogy" xml:space="preserve"><value>Stammbaum</value></data>
-  <data name="Details_Genealogy_Tip" xml:space="preserve"><value>Stammbaum der Schmelze: Blöcke und die daraus gefertigten Teile</value></data>
+  <data name="Details_Genealogy_Tip" xml:space="preserve"><value>Bolzenchargen und zugehörige beladene Körbe</value></data>
   <data name="Details_Material" xml:space="preserve"><value>Material</value></data>
   <data name="Details_Load" xml:space="preserve"><value>Ladung</value></data>
   <data name="Details_LoadValue" xml:space="preserve"><value>{0:0.0} m · {1:0.0} t · {2} Stk.</value></data>
@@ -132,8 +132,8 @@
   <data name="Plan_OrderLine" xml:space="preserve"><value>{0} · {1} · {2:0.0} m · {3:0.0} t</value></data>
 
   <!-- Genealogy dialog -->
-  <data name="Genealogy_Title" xml:space="preserve"><value>Stammbaum der Schmelze {0}</value></data>
-  <data name="Genealogy_Summary" xml:space="preserve"><value>{0} Teile aus dieser Schmelze</value></data>
+  <data name="Genealogy_Title" xml:space="preserve"><value>Materialverfolgung · {0}</value></data>
+  <data name="Genealogy_Summary" xml:space="preserve"><value>{0} Material- und Korbkennungen</value></data>
   <data name="Genealogy_NoOrder" xml:space="preserve"><value>kein Transport erfasst</value></data>
   <data name="Genealogy_OrderLine" xml:space="preserve"><value>{0} · {1} → {2} · {3}</value></data>
 
@@ -178,4 +178,273 @@
   <data name="Info_LegacyBackup" xml:space="preserve"><value>Diese Version verwendet ein neues Datenbankformat. Daher wurde eine neue Datenbank mit Demodaten angelegt.
 Die bisherige Datei wurde gesichert unter:
 {0}</value></data>
+  <data name="Vehicle_BasketShuttle" xml:space="preserve"><value>Korb-Shuttle</value></data>
+  <data name="Vehicle_OverheadCrane" xml:space="preserve"><value>Automatikkran</value></data>
+  <data name="Plant_Tab" xml:space="preserve"><value>Anlagenübersicht</value></data>
+  <data name="Plant_OrdersTab" xml:space="preserve"><value>Aufträge &amp; Rückverfolgung</value></data>
+  <data name="Plant_Title" xml:space="preserve"><value>Aluminium-Strangpressen · Materialfluss</value></data>
+  <data name="Plant_Subtitle" xml:space="preserve"><value>Korbverfolgung vom Pressenauslauf bis zum Versand</value></data>
+  <data name="Plant_Run" xml:space="preserve"><value>Demo starten</value></data>
+  <data name="Plant_Pause" xml:space="preserve"><value>Pause</value></data>
+  <data name="Plant_Step" xml:space="preserve"><value>Nächster Schritt</value></data>
+  <data name="Plant_Fault" xml:space="preserve"><value>Shuttle-Störung</value></data>
+  <data name="Plant_Restore" xml:space="preserve"><value>Störung beheben</value></data>
+  <data name="Plant_Faulted" xml:space="preserve"><value>Störung · gestoppt</value></data>
+  <data name="Plant_Transferring" xml:space="preserve"><value>Transportiert</value></data>
+  <data name="Plant_Ready" xml:space="preserve"><value>Verfügbar</value></data>
+  <data name="Plant_Baskets" xml:space="preserve"><value>Körbe</value></data>
+  <data name="Plant_Moving" xml:space="preserve"><value>Im Transport</value></data>
+  <data name="Plant_Held" xml:space="preserve"><value>Qualitätssperre</value></data>
+  <data name="Plant_Shipped" xml:space="preserve"><value>Pakete im Versand</value></data>
+  <data name="Plant_Kind_Press" xml:space="preserve"><value>Pressenauslauf</value></data>
+  <data name="Plant_Kind_AgingOven" xml:space="preserve"><value>Auslagerungsofen</value></data>
+  <data name="Plant_Kind_Packing" xml:space="preserve"><value>Packplatz</value></data>
+  <data name="Plant_Kind_Shipping" xml:space="preserve"><value>Versandpuffer</value></data>
+  <data name="Plant_Capacity" xml:space="preserve"><value>{0}/{1} belegt · {2} reserviert</value></data>
+  <data name="Plant_Empty" xml:space="preserve"><value>Leer</value></data>
+  <data name="Plant_Processing" xml:space="preserve"><value>Bearbeitung (Demo)</value></data>
+  <data name="Plant_Position" xml:space="preserve"><value>Aktuelle Position</value></data>
+  <data name="Plant_Route" xml:space="preserve"><value>PRESSENAUSLÄUFE → AUSLAGERUNGSÖFEN → VERPACKUNG → VERSAND</value></data>
+  <data name="Plant_Legend" xml:space="preserve"><value>Gelb: Kapazität erreicht · blauer Rahmen: Ankunft reserviert · bewegte Körbe stehen in der Tabelle.</value></data>
+  <data name="Plant_DemoNote" xml:space="preserve"><value>Demo: ein Ereignis pro Schritt, im Automatikmodus alle 2 Sekunden. Jeder Ofenschritt zählt 1 simulierte Minute. Temperaturen und Rezepte sind Beispielwerte. Störungen und Handbetrieb halten Zyklen an.</value></data>
+  <data name="Plant_Events" xml:space="preserve"><value>Letzte Materialbewegungen</value></data>
+  <data name="Plant_Stepping" xml:space="preserve"><value>Simulation wird fortgesetzt…</value></data>
+  <data name="Plant_DestinationBlocked" xml:space="preserve"><value>Am Ziel fehlen Korbplätze oder die gemeinsame Transporteinrichtung ist belegt.</value></data>
+  <data name="Plant_Result_Waiting" xml:space="preserve"><value>Warten — kein möglicher Transport. Qualitätssperren und Zielkapazität prüfen.</value></data>
+  <data name="Plant_Result_Dispatched" xml:space="preserve"><value>{0} · Transport gestartet; Ziel reserviert.</value></data>
+  <data name="Plant_Result_Arrived" xml:space="preserve"><value>{0} · Ankunft quittiert.</value></data>
+  <data name="Plant_Result_ProcessCompleted" xml:space="preserve"><value>{0} · Bearbeitung beendet; nächster Transportauftrag erstellt.</value></data>
+  <data name="Plant_Result_Faulted" xml:space="preserve"><value>Shuttle-Störung — Transport gestoppt. Störung beheben, um fortzufahren.</value></data>
+  <data name="Plant_Error" xml:space="preserve"><value>Simulation wegen eines Fehlers angehalten.</value></data>
+  <data name="Plant_Kind_Buffer" xml:space="preserve"><value>Puffer</value></data>
+  <data name="Plant_Equipment" xml:space="preserve"><value>Anlagensteuerung</value></data>
+  <data name="Plant_Kind" xml:space="preserve"><value>Typ</value></data>
+  <data name="Plant_Mode" xml:space="preserve"><value>Betriebsart</value></data>
+  <data name="Plant_Operation" xml:space="preserve"><value>Aktiver Vorgang</value></data>
+  <data name="Plant_Reason" xml:space="preserve"><value>Grund</value></data>
+  <data name="Plant_ApplyControl" xml:space="preserve"><value>Übernehmen</value></data>
+  <data name="Plant_ReasonRequired" xml:space="preserve"><value>Bitte einen Grund für die Anlagenänderung eingeben.</value></data>
+  <data name="Plant_Mode_Automatic" xml:space="preserve"><value>Automatik</value></data>
+  <data name="Plant_Mode_Manual" xml:space="preserve"><value>Manuell</value></data>
+  <data name="Plant_Condition_Operational" xml:space="preserve"><value>Betriebsbereit</value></data>
+  <data name="Plant_Condition_Fault" xml:space="preserve"><value>Störung</value></data>
+  <data name="Plant_Condition_Maintenance" xml:space="preserve"><value>Wartung</value></data>
+  <data name="Plant_EquipmentStatus_Available" xml:space="preserve"><value>Verfügbar</value></data>
+  <data name="Plant_EquipmentStatus_Busy" xml:space="preserve"><value>Belegt</value></data>
+  <data name="Plant_EquipmentStatus_Fault" xml:space="preserve"><value>Störung</value></data>
+  <data name="Plant_EquipmentStatus_Maintenance" xml:space="preserve"><value>Wartung</value></data>
+  <data name="Plant_EquipmentKind_Press" xml:space="preserve"><value>Pressenauslauf</value></data>
+  <data name="Plant_EquipmentKind_Oven" xml:space="preserve"><value>Alterungsofen</value></data>
+  <data name="Plant_EquipmentKind_Shuttle" xml:space="preserve"><value>Gemeinsamer Transport</value></data>
+  <data name="Plant_EquipmentKind_Packing" xml:space="preserve"><value>Verpackungsstation</value></data>
+  <data name="Plant_OvenCycle" xml:space="preserve"><value>Ofenzyklus</value></data>
+  <data name="Plant_AwaitingCycle" xml:space="preserve"><value>Wartet auf Behandlung</value></data>
+  <data name="Plant_Phase_Heating" xml:space="preserve"><value>Aufheizen</value></data>
+  <data name="Plant_Phase_Holding" xml:space="preserve"><value>Halten</value></data>
+  <data name="Plant_Phase_Cooling" xml:space="preserve"><value>Abkühlen</value></data>
+  <data name="Plant_Phase_Completed" xml:space="preserve"><value>Behandlung beendet</value></data>
+  <data name="Plant_Result_CycleStarted" xml:space="preserve"><value>{0} · Ofencharge gestartet.</value></data>
+  <data name="Plant_Result_CycleAdvanced" xml:space="preserve"><value>{0} · Zyklus um eine simulierte Minute fortgeschritten.</value></data>
+  <data name="Plant_Result_CycleCompleted" xml:space="preserve"><value>{0} · Behandlung und Abkühlung beendet; Entladen erlaubt.</value></data>
+  <data name="Plant_EquipmentId" xml:space="preserve"><value>Anlage</value></data>
+  <data name="Plant_PackingTab" xml:space="preserve"><value>Verpackung &amp; Korbrücklauf</value></data>
+  <data name="Plant_PackingGuide" xml:space="preserve"><value>Verpacken → Sicht- und Mengenprüfung → Etikett → Versand. Leere Körbe kehren zum Pressenauslauf zurück. Für manuelle Prüfung oder Neubeladung die Demo pausieren.</value></data>
+  <data name="Plant_Packages" xml:space="preserve"><value>Pakete und Rückverfolgung</value></data>
+  <data name="Plant_Package" xml:space="preserve"><value>Paket</value></data>
+  <data name="Plant_Load" xml:space="preserve"><value>Beladung</value></data>
+  <data name="Plant_Lot" xml:space="preserve"><value>Materiallos</value></data>
+  <data name="Col_Quantity" xml:space="preserve"><value>Menge</value></data>
+  <data name="Plant_VisualCheck" xml:space="preserve"><value>Sichtprüfung bestanden</value></data>
+  <data name="Plant_QuantityCheck" xml:space="preserve"><value>Menge geprüft</value></data>
+  <data name="Plant_Inspect" xml:space="preserve"><value>Prüfung erfassen</value></data>
+  <data name="Plant_Label" xml:space="preserve"><value>Freigegebenes Etikett (druckbarer Text)</value></data>
+  <data name="Plant_NoLabel" xml:space="preserve"><value>Das Etikett entsteht nach erfolgreicher Sicht- und Mengenprüfung.</value></data>
+  <data name="Plant_Reuse" xml:space="preserve"><value>Zurückgekehrten leeren Korb neu beladen</value></data>
+  <data name="Plant_ReuseGuide" xml:space="preserve"><value>Korb am Pressenauslauf, Materiallos und neue Menge wählen. Die Neubeladung erstellt einen protokollierten Ofentransportauftrag. Frühere Behandlungen gelten nicht für die neue Beladung.</value></data>
+  <data name="Plant_Weight" xml:space="preserve"><value>Gewicht (t)</value></data>
+  <data name="Plant_Length" xml:space="preserve"><value>Länge (m)</value></data>
+  <data name="Plant_Reload" xml:space="preserve"><value>Korb neu beladen</value></data>
+  <data name="Plant_EmptyBasket" xml:space="preserve"><value>Leerer Korb</value></data>
+  <data name="Plant_EmptyReturning" xml:space="preserve"><value>Leerrücklauf</value></data>
+  <data name="Plant_PackageStatus_Packing" xml:space="preserve"><value>Verpacken</value></data>
+  <data name="Plant_PackageStatus_AwaitingInspection" xml:space="preserve"><value>Wartet auf Prüfung</value></data>
+  <data name="Plant_PackageStatus_Rejected" xml:space="preserve"><value>Abgelehnt · gesperrt</value></data>
+  <data name="Plant_PackageStatus_Ready" xml:space="preserve"><value>Geprüft und etikettiert</value></data>
+  <data name="Plant_PackageStatus_InTransit" xml:space="preserve"><value>Transport zum Versand</value></data>
+  <data name="Plant_PackageStatus_Shipped" xml:space="preserve"><value>Im Versand</value></data>
+  <data name="Plant_Result_PackingStarted" xml:space="preserve"><value>{0} · Verpackung gestartet.</value></data>
+  <data name="Plant_Result_PackingCompleted" xml:space="preserve"><value>{0} · Verpackung beendet; Prüfung erforderlich.</value></data>
+  <data name="Plant_Result_PackageChecked" xml:space="preserve"><value>{0} · geprüft, etikettiert und entladen; Korb ist leer.</value></data>
+  <data name="Plant_Result_PackageDispatched" xml:space="preserve"><value>{0} · Pakettransport zum Versand gestartet.</value></data>
+  <data name="Plant_Result_PackageShipped" xml:space="preserve"><value>{0} · Paket im Versand angekommen.</value></data>
+  <data name="Plant_Result_ReturnStarted" xml:space="preserve"><value>{0} · Leerkorbrücklauf gestartet.</value></data>
+  <data name="Plant_Result_ReturnArrived" xml:space="preserve"><value>{0} · Leerkorb zurückgekehrt; Neubeladung möglich.</value></data>
+  <data name="Schedule_Tab" xml:space="preserve"><value>Produktionsplanung</value></data>
+  <data name="Schedule_Guide" xml:space="preserve"><value>Zulässige Aktionen werden nach jedem Ereignis neu berechnet. Die erste Zeile wird als Nächstes ausgeführt; Dringlichkeit und Termine ordnen kompatible Ofenchargen.</value></data>
+  <data name="Schedule_Next" xml:space="preserve"><value>Nächste Aktion</value></data>
+  <data name="Schedule_NoAction" xml:space="preserve"><value>Keine zulässige Aktion. Sperrgründe unten prüfen.</value></data>
+  <data name="Schedule_Candidates" xml:space="preserve"><value>Zulässige Aktionen nach Ausführungspriorität</value></data>
+  <data name="Schedule_Blocked" xml:space="preserve"><value>Wartende und gesperrte Vorgänge</value></data>
+  <data name="Schedule_Action" xml:space="preserve"><value>Aktion</value></data>
+  <data name="Schedule_Reference" xml:space="preserve"><value>Referenz</value></data>
+  <data name="Schedule_Route" xml:space="preserve"><value>Route</value></data>
+  <data name="Schedule_Recipe" xml:space="preserve"><value>Rezept</value></data>
+  <data name="Schedule_Due" xml:space="preserve"><value>Termin</value></data>
+  <data name="Schedule_Action_ArriveTransport" xml:space="preserve"><value>Materialankunft bestätigen</value></data>
+  <data name="Schedule_Action_ArriveReturn" xml:space="preserve"><value>Leerrücklauf bestätigen</value></data>
+  <data name="Schedule_Action_ArrivePackage" xml:space="preserve"><value>Paketankunft bestätigen</value></data>
+  <data name="Schedule_Action_CompletePacking" xml:space="preserve"><value>Verpackung abschließen</value></data>
+  <data name="Schedule_Action_InspectPackage" xml:space="preserve"><value>Paket prüfen</value></data>
+  <data name="Schedule_Action_StartPacking" xml:space="preserve"><value>Verpackung starten</value></data>
+  <data name="Schedule_Action_ReturnEmpty" xml:space="preserve"><value>Leeren Korb zurückführen</value></data>
+  <data name="Schedule_Action_ShipPackage" xml:space="preserve"><value>Paket zum Versand senden</value></data>
+  <data name="Schedule_Action_CreatePackingOrder" xml:space="preserve"><value>Ofenentladung planen</value></data>
+  <data name="Schedule_Action_DispatchBasket" xml:space="preserve"><value>Materialkorb versenden</value></data>
+  <data name="Schedule_Action_StartOvenCycle" xml:space="preserve"><value>Ofencharge starten</value></data>
+  <data name="Schedule_Action_AdvanceOvenCycle" xml:space="preserve"><value>Ofenzyklus fortsetzen</value></data>
+  <data name="Schedule_Reason_ActiveTransfer" xml:space="preserve"><value>Aktiven Transport zuerst abschließen</value></data>
+  <data name="Schedule_Reason_FreePackingStation" xml:space="preserve"><value>Aktive Verpackung abschließen</value></data>
+  <data name="Schedule_Reason_InspectionRequired" xml:space="preserve"><value>Sicht- und Mengenprüfung erforderlich</value></data>
+  <data name="Schedule_Reason_PackingRequired" xml:space="preserve"><value>Material an der Verpackung bereit</value></data>
+  <data name="Schedule_Reason_ReturnEmpty" xml:space="preserve"><value>Leerkorb an freien Pressenplatz zurückführen</value></data>
+  <data name="Schedule_Reason_ShipCheckedPackage" xml:space="preserve"><value>Geprüftes Paket; Versand hat Platz</value></data>
+  <data name="Schedule_Reason_TreatmentComplete" xml:space="preserve"><value>Behandlung beendet; Ofenauslauf freigeben</value></data>
+  <data name="Schedule_Reason_CompatibleBatch" xml:space="preserve"><value>Ausgewählte kompatible Legierungsgruppe</value></data>
+  <data name="Schedule_Reason_FullBatch" xml:space="preserve"><value>Ofencharge voll und kompatibel</value></data>
+  <data name="Schedule_Reason_UrgentPartialBatch" xml:space="preserve"><value>Dringende oder überfällige Charge; Teilcharge starten</value></data>
+  <data name="Schedule_Reason_NoCompatibleIncoming" xml:space="preserve"><value>Kein zulässiger kompatibler Zulaufkorb</value></data>
+  <data name="Schedule_Reason_ContinueTreatment" xml:space="preserve"><value>Gespeicherte Zykluszeit gleichmäßig fortsetzen</value></data>
+  <data name="Schedule_Reason_QualityHold" xml:space="preserve"><value>Qualitätssperre benötigt Bedienerfreigabe</value></data>
+  <data name="Schedule_Reason_Cancelled" xml:space="preserve"><value>Materialauftrag storniert</value></data>
+  <data name="Schedule_Reason_EquipmentFault" xml:space="preserve"><value>Anlagenstörung oder Wartung</value></data>
+  <data name="Schedule_Reason_EquipmentManual" xml:space="preserve"><value>Anlage im Handbetrieb</value></data>
+  <data name="Schedule_Reason_EquipmentBusy" xml:space="preserve"><value>Anlage oder gemeinsamer Transport belegt</value></data>
+  <data name="Schedule_Reason_DestinationFull" xml:space="preserve"><value>Ziel hat keinen freien Platz</value></data>
+  <data name="Schedule_Reason_IncompatibleRecipe" xml:space="preserve"><value>Kein gemeinsames Rezept oder fertige Charge nicht entleert</value></data>
+  <data name="Schedule_Reason_TreatmentPending" xml:space="preserve"><value>Behandlung und Abkühlung nicht beendet</value></data>
+  <data name="Schedule_Reason_AwaitingBatch" xml:space="preserve"><value>Wartet auf die ausgewählte kompatible Charge</value></data>
+  <data name="Schedule_Reason_ShippingOrderReplaced" xml:space="preserve"><value>Anderer Materialtransport noch offen</value></data>
+  <data name="Schedule_Reason_Oversize" xml:space="preserve"><value>Beladung übersteigt Demo-Transportkapazität</value></data>
+  <data name="Schedule_Reason_NoDestination" xml:space="preserve"><value>Kein zulässiges Ziel verfügbar</value></data>
+  <data name="Plc_Tab" xml:space="preserve"><value>SPS-Kommunikation</value></data>
+  <data name="Plc_Guide" xml:space="preserve"><value>Persistenter Demo-Kanal für Materialtransporte, Pakete und Leerrückläufe. Kein reales Maschinenprotokoll ist angeschlossen.</value></data>
+  <data name="Plc_Policy" xml:space="preserve"><value>Quittierungsfrist: 15 Sekunden. Wiederholung nur nach Zeitüberschreitung, mit gleicher Befehls-ID und maximal 3 Sendeversuchen. Reservierungen bleiben bis zur bestätigten Ankunft bestehen.</value></data>
+  <data name="Plc_Commands" xml:space="preserve"><value>Befehle und Quittierungen</value></data>
+  <data name="Plc_Attempts" xml:space="preserve"><value>Versuche</value></data>
+  <data name="Plc_Deadline" xml:space="preserve"><value>Quittierungsfrist</value></data>
+  <data name="Plc_Detail" xml:space="preserve"><value>Letzter Austausch / Fehler</value></data>
+  <data name="Plc_Correlation" xml:space="preserve"><value>Korrelations-ID des ausgewählten Befehls</value></data>
+  <data name="Plc_ConnectedToggle" xml:space="preserve"><value>Demo-SPS verbunden</value></data>
+  <data name="Plc_SuppressToggle" xml:space="preserve"><value>Quittierungszustellung unterdrücken</value></data>
+  <data name="Plc_Apply" xml:space="preserve"><value>Kanaleinstellungen übernehmen</value></data>
+  <data name="Plc_Retry" xml:space="preserve"><value>Gleichen Befehl wiederholen</value></data>
+  <data name="Plc_Connected" xml:space="preserve"><value>Demo-SPS verbunden; Quittierungen zugestellt</value></data>
+  <data name="Plc_RepliesSuppressed" xml:space="preserve"><value>Demo-SPS verbunden; Quittierungen unterdrückt</value></data>
+  <data name="Plc_Offline" xml:space="preserve"><value>Demo-SPS getrennt</value></data>
+  <data name="Plc_Kind_MaterialTransfer" xml:space="preserve"><value>Materialtransport</value></data>
+  <data name="Plc_Kind_EmptyReturn" xml:space="preserve"><value>Leerkorbrücklauf</value></data>
+  <data name="Plc_Kind_PackageTransfer" xml:space="preserve"><value>Pakettransport</value></data>
+  <data name="Plc_Status_Pending" xml:space="preserve"><value>Eingereiht</value></data>
+  <data name="Plc_Status_AwaitingAck" xml:space="preserve"><value>Wartet auf Quittierung</value></data>
+  <data name="Plc_Status_Accepted" xml:space="preserve"><value>Angenommen; nicht angekommen</value></data>
+  <data name="Plc_Status_Completed" xml:space="preserve"><value>Quittiert; Anwendung ausstehend</value></data>
+  <data name="Plc_Status_Applied" xml:space="preserve"><value>Ankunft bestätigt</value></data>
+  <data name="Plc_Status_TimedOut" xml:space="preserve"><value>Zeitüberschreitung; reserviert</value></data>
+  <data name="Plc_Status_Rejected" xml:space="preserve"><value>Abgelehnt; Prüfung erforderlich</value></data>
+  <data name="Plant_Result_PlcWaiting" xml:space="preserve"><value>{0} · wartet auf SPS-Quittierung; Reservierung bleibt.</value></data>
+  <data name="Plant_Result_PlcAccepted" xml:space="preserve"><value>{0} · Befehl angenommen; Ankunftsbestätigung ausstehend.</value></data>
+  <data name="Plant_Result_PlcTimedOut" xml:space="preserve"><value>{0} · Quittierungsfrist abgelaufen. Kommunikation prüfen, dann gleichen Befehl wiederholen.</value></data>
+  <data name="Plant_Result_PlcRejected" xml:space="preserve"><value>{0} · SPS hat den Befehl abgelehnt. Bedienerprüfung erforderlich.</value></data>
+  <data name="Plant_Result_PlcOffline" xml:space="preserve"><value>{0} · SPS-Verbindung getrennt; Transport bleibt reserviert.</value></data>
+  <data name="Plant_Result_PlcDeferred" xml:space="preserve"><value>{0} · Quittierung gespeichert; Anlage muss vor Anwendung verfügbar sein.</value></data>
+  <data name="Plc_ManualConfirm" xml:space="preserve"><value>Physisch geprüfte Ankunft manuell bestätigen</value></data>
+  <data name="Plc_ManualPrompt" xml:space="preserve"><value>Bestätigen, dass {0} physisch angekommen ist ({1})? Dies erfasst eine Bedienerbestätigung statt einer Maschinenquittierung. Vor Fortfahren die tatsächliche Position prüfen.</value></data>
+  <data name="Plant_Result_CentralService" xml:space="preserve"><value>Der zentrale Dienst steuert den Automatikbetrieb. Diese Station aktualisiert den Anlagenzustand.</value></data>
+  <data name="Service_Running" xml:space="preserve"><value>Zentraler Dienst: aktiv · letzter erfolgreicher Zyklus</value></data>
+  <data name="Service_Stopped" xml:space="preserve"><value>Zentraler Dienst: Automatikbetrieb gestoppt</value></data>
+  <data name="Service_Error" xml:space="preserve"><value>Zentraler Dienst: Fehler</value></data>
+  <data name="Service_Unavailable" xml:space="preserve"><value>Zentraler Dienst: nicht erreichbar</value></data>
+  <data name="Service_DifferentDatabase" xml:space="preserve"><value>Zentraler Dienst: andere Datenbank konfiguriert</value></data>
+  <data name="ControlApi_Unauthorized" xml:space="preserve"><value>Ihr Windows-Konto darf keine Anlagensteuerung ausführen.</value></data>
+  <data name="ControlApi_Conflict" xml:space="preserve"><value>Das Gerät wurde geändert oder der Dienst verwendet eine andere Datenbank. Vor erneutem Senden aktualisieren und prüfen.</value></data>
+  <data name="ControlApi_Invalid" xml:space="preserve"><value>Ungültiger Steuerbefehl. Eine Begründung mit 1–1000 Zeichen eingeben.</value></data>
+  <data name="ControlApi_NotFound" xml:space="preserve"><value>Gerät beim zentralen Dienst nicht gefunden.</value></data>
+  <data name="ControlApi_Failed" xml:space="preserve"><value>Der Dienst hat den Befehl nicht bestätigt. Gerätezustand vor erneutem Senden aktualisieren und prüfen.</value></data>
+  <data name="ControlApi_Unavailable" xml:space="preserve"><value>Dienst nicht erreichbar oder Antwort verloren. Gerätezustand vor erneutem Senden aktualisieren und prüfen. Kein lokaler Befehl wurde ausgeführt.</value></data>
+  <data name="ControlApi_Reload" xml:space="preserve"><value>Steuerung neu laden</value></data>
+  <data name="Language_Label" xml:space="preserve"><value>Sprache</value></data>
+  <data name="OperatorApi_Unauthorized" xml:space="preserve"><value>Ihr Windows-Konto darf keine Bedienbefehle ausführen.</value></data>
+  <data name="OperatorApi_Conflict" xml:space="preserve"><value>Der Anlagenzustand wurde geändert, die Aktion ist gesperrt oder der Dienst nutzt eine andere Datenbank. Vor erneutem Senden aktualisieren und prüfen.</value></data>
+  <data name="OperatorApi_Invalid" xml:space="preserve"><value>Ungültiger Befehl. Auswahl, Abmessungen und erforderliche Begründung prüfen.</value></data>
+  <data name="OperatorApi_NotFound" xml:space="preserve"><value>Das ausgewählte Anlagenobjekt wurde beim Dienst nicht gefunden.</value></data>
+  <data name="OperatorApi_Failed" xml:space="preserve"><value>Der Dienst hat die Aktion nicht bestätigt. Verlauf vor erneutem Senden aktualisieren und prüfen.</value></data>
+  <data name="OperatorApi_Unavailable" xml:space="preserve"><value>Dienst nicht erreichbar oder Antwort verloren. Verlauf vor erneutem Senden aktualisieren und prüfen. Keine lokale Aktion wurde ausgeführt.</value></data>
+  <data name="OperatorApi_StartService" xml:space="preserve"><value>Vor dem Öffnen der Oberfläche den zentralen Dienst zur Initialisierung der Anlagendatenbank starten.</value></data>
+  <data name="OperatorApi_Refresh" xml:space="preserve"><value>Bedienerdaten aktualisieren</value></data>
+  <data name="OperatorApi_RefreshTip" xml:space="preserve"><value>Anlagenzustand neu laden und Qualitäts-/SPS-Eingaben vor einer neuen Entscheidung verwerfen.</value></data>
+  <data name="Access_Status" xml:space="preserve"><value>Bediener: {0} · {1}</value></data>
+  <data name="Access_Unavailable" xml:space="preserve"><value>Bedienrechte nicht verfügbar · Aktionen gesperrt</value></data>
+  <data name="Access_ReadOnly" xml:space="preserve"><value>Nur Lesen</value></data>
+  <data name="Access_Quality" xml:space="preserve"><value>Qualität</value></data>
+  <data name="Access_Logistics" xml:space="preserve"><value>Logistik</value></data>
+  <data name="Access_Maintenance" xml:space="preserve"><value>Instandhaltung</value></data>
+  <data name="Access_Supervisor" xml:space="preserve"><value>Schichtleitung</value></data>
+  <data name="Access_LegacyEquipment" xml:space="preserve"><value>Anlagenzugriff (bisherig)</value></data>
+  <data name="Access_LegacyOperator" xml:space="preserve"><value>Bedienzugriff (bisherig)</value></data>
+  <data name="Alarm_Unacknowledged" xml:space="preserve"><value>Unquittiert</value></data>
+  <data name="Alarm_PlcOffline" xml:space="preserve"><value>SPS-Verbindung unterbrochen</value></data>
+  <data name="Alarm_Source" xml:space="preserve"><value>Quelle</value></data>
+  <data name="Alarm_RuntimeError" xml:space="preserve"><value>Laufzeitfehler</value></data>
+  <data name="Alarm_Cleared" xml:space="preserve"><value>Gegangen</value></data>
+  <data name="Alarm_Offline" xml:space="preserve"><value>Verbindung nicht verfügbar — angezeigte Alarme können veraltet sein.</value></data>
+  <data name="Alarm_Note" xml:space="preserve"><value>Details</value></data>
+  <data name="Alarm_Event_Cleared" xml:space="preserve"><value>Gegangen</value></data>
+  <data name="Alarm_Event_Updated" xml:space="preserve"><value>Aktualisiert</value></data>
+  <data name="Alarm_Summary" xml:space="preserve"><value>{0} aktiv · {1} unquittiert</value></data>
+  <data name="Alarm_Action" xml:space="preserve"><value>Aktion</value></data>
+  <data name="Alarm_PlcRejected" xml:space="preserve"><value>SPS-Auftrag abgelehnt</value></data>
+  <data name="Alarm_RefreshSelection" xml:space="preserve"><value>Ausgewählte Version aktualisieren</value></data>
+  <data name="Alarm_Raised" xml:space="preserve"><value>Zeit</value></data>
+  <data name="Alarm_Tab" xml:space="preserve"><value>Alarme</value></data>
+  <data name="Alarm_Event_Acknowledged" xml:space="preserve"><value>Quittiert</value></data>
+  <data name="Alarm_Message" xml:space="preserve"><value>Alarm</value></data>
+  <data name="Alarm_EquipmentFault" xml:space="preserve"><value>Anlagenstörung</value></data>
+  <data name="Alarm_Reason" xml:space="preserve"><value>Prüfvermerk</value></data>
+  <data name="Alarm_PlcTimedOut" xml:space="preserve"><value>SPS-Quittierung überfällig</value></data>
+  <data name="Alarm_History" xml:space="preserve"><value>Verlauf der Meldung</value></data>
+  <data name="Alarm_BackupError" xml:space="preserve"><value>Datensicherung fehlgeschlagen</value></data>
+  <data name="Alarm_Event_Raised" xml:space="preserve"><value>Gekommen</value></data>
+  <data name="Alarm_Acknowledgement" xml:space="preserve"><value>Quittierung</value></data>
+  <data name="Alarm_Guide" xml:space="preserve"><value>Eine Quittierung dokumentiert die Prüfung. Sie behebt keine Störung und bestätigt keine SPS-Ankunft.</value></data>
+  <data name="Alarm_Acknowledge" xml:space="preserve"><value>Quittieren</value></data>
+  <data name="Alarm_Actor" xml:space="preserve"><value>Benutzer</value></data>
+  <data name="Alarm_Active" xml:space="preserve"><value>Aktiv</value></data>
+  <data name="Plc_NotConfigured" xml:space="preserve"><value>Keine SPS konfiguriert</value></data>
+  <data name="Alarm_Unavailable" xml:space="preserve"><value>Die Alarmüberwachung ist in dieser Dienstversion nicht verfügbar.</value></data>
+  <data name="Recipe_Event_Archived" xml:space="preserve"><value>Archiviert</value></data>
+  <data name="Recipe_Event_Revised" xml:space="preserve"><value>Überarbeitet</value></data>
+  <data name="Recipe_History" xml:space="preserve"><value>Revisionsverlauf</value></data>
+  <data name="Recipe_Validate" xml:space="preserve"><value>Für Simulation validieren</value></data>
+  <data name="Recipe_Temperature" xml:space="preserve"><value>Temperatur °C</value></data>
+  <data name="Recipe_Event_Validated" xml:space="preserve"><value>Validiert</value></data>
+  <data name="Recipe_Parameters" xml:space="preserve"><value>Gespeicherte Parameter</value></data>
+  <data name="Recipe_Status_Draft" xml:space="preserve"><value>Entwurf</value></data>
+  <data name="Recipe_Holding" xml:space="preserve"><value>Halten min</value></data>
+  <data name="Recipe_Reload" xml:space="preserve"><value>Ausgewähltes Rezept neu laden</value></data>
+  <data name="Recipe_Archive" xml:space="preserve"><value>Rezept archivieren</value></data>
+  <data name="Recipe_Id" xml:space="preserve"><value>Rezeptkennung</value></data>
+  <data name="Recipe_Status_Validated" xml:space="preserve"><value>Validiert</value></data>
+  <data name="Recipe_Invalid" xml:space="preserve"><value>Kennung, vierstellige Legierung, Temperatur (&gt;20 und &lt;=500 °C), positive ganze Minuten und Grund prüfen.</value></data>
+  <data name="Recipe_Alloy" xml:space="preserve"><value>Legierung</value></data>
+  <data name="Recipe_Heating" xml:space="preserve"><value>Aufheizen min</value></data>
+  <data name="Recipe_Tab" xml:space="preserve"><value>Ofenrezepte</value></data>
+  <data name="Recipe_Event_Imported" xml:space="preserve"><value>Übernommen</value></data>
+  <data name="Recipe_Guide" xml:space="preserve"><value>Simulationsrezepte: Änderungen erzeugen einen Entwurf. Vor neuen Zyklen validieren. Laufende Zyklen behalten ihre ursprüngliche Revision. Rolle Schichtleitung erforderlich.</value></data>
+  <data name="Recipe_Save" xml:space="preserve"><value>Entwurf speichern</value></data>
+  <data name="Recipe_Cooling" xml:space="preserve"><value>Abkühlen min</value></data>
+  <data name="Recipe_Status_Archived" xml:space="preserve"><value>Archiviert</value></data>
+  <data name="Recipe_New" xml:space="preserve"><value>Neues Rezept</value></data>
+  <data name="Recipe_Revision" xml:space="preserve"><value>Revision</value></data>
+  <data name="Recipe_Reason" xml:space="preserve"><value>Änderungs- / Validierungsgrund</value></data>
+  <data name="Recipe_Event_Created" xml:space="preserve"><value>Erstellt</value></data>
 </root>

@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 using TransportOrders.Api;
 using TransportOrders.Core;
 
@@ -15,12 +16,15 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     private readonly TempDatabase _database = new();
 
     public string DatabasePath => _database.Path;
+    protected override void ConfigureClient(HttpClient client)
+    { base.ConfigureClient(client); client.DefaultRequestHeaders.Add("Test-User", "PLANT\\Reader"); }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("Database:Path", _database.Path);
         builder.UseSetting("Plant:TimeZone", "UTC");
+        builder.UseTestWindowsAuthentication();
     }
 
     protected override void Dispose(bool disposing)
@@ -77,12 +81,11 @@ public sealed class ApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Filters_by_heat_number_for_traceability()
     {
-        var orders = await _client.GetFromJsonAsync<List<OrderDto>>("/api/orders?heat=h-26031", Json);
+        var orders = await _client.GetFromJsonAsync<List<OrderDto>>("/api/orders?heat=al-26031", Json);
 
         Assert.NotEmpty(orders!);
-        Assert.All(orders!, o => Assert.Equal("H-26031", o.HeatNumber));
-        Assert.Contains(orders!, o => o.Material == "1.2379 Rohblock");
-        Assert.Contains(orders!, o => o.Material == "1.2379 Schmiedestab");
+        Assert.All(orders!, o => Assert.Equal("AL-26031", o.HeatNumber));
+        Assert.All(orders!, o => Assert.Equal("EN AW-6060 profiles", o.Material));
     }
 
     [Fact]
@@ -143,38 +146,35 @@ public sealed class ApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task Transports_show_fill_rate_and_recorded_part_load_reasons()
+    public async Task Transports_show_basket_equipment_and_full_loads()
     {
         var transports = await _client.GetFromJsonAsync<List<TransportDto>>("/api/transports", Json);
 
         Assert.Equal(2, transports!.Count);
-        Assert.All(transports, t => Assert.True(t.IsPartLoad && t.PartLoadReason is not null));
-        var heavy = transports.Single(t => t.PartLoadReason == PartLoadReason.PayloadLimit);
-        Assert.True(heavy.LoadedWeightTonnes >= heavy.PayloadTonnes * 0.9m);
+        Assert.All(transports, t => Assert.False(t.IsPartLoad));
+        Assert.All(transports, t => Assert.True(t.FillRate >= 0.9m));
     }
 
     [Fact]
-    public async Task Load_plan_proposes_full_loads_and_one_urgent_part_load()
+    public async Task Load_plan_groups_aluminium_baskets_and_excludes_held_material()
     {
         var plan = await _client.GetFromJsonAsync<LoadPlanDto>("/api/load-plan", Json);
 
         Assert.Equal(0.9m, plan!.FullLoadThreshold);
-        Assert.Equal(3, plan.Proposals.Count);
-        Assert.Equal(2, plan.Proposals.Count(p => p.IsFull && p.FillRate >= 0.9m));
-        var partLoad = plan.Proposals.Single(p => !p.IsFull);
-        Assert.Equal(["TO-2026-0007"], partLoad.OrderNumbers);
-        Assert.Equal(PartLoadReason.UrgentMaterial, partLoad.SuggestedReason);
+        Assert.Equal(5, plan.Proposals.Count);
+        Assert.All(plan.Proposals, p => Assert.True(p.IsFull && p.FillRate >= 0.9m));
+        Assert.Contains(plan.Proposals, p => p.OrderNumbers.Contains("TO-2026-0007"));
         Assert.DoesNotContain(plan.Proposals, p => p.OrderNumbers.Contains("TO-2026-0011"));   // on hold
     }
 
     [Fact]
-    public async Task Genealogy_shows_ingots_and_the_bars_made_from_them()
+    public async Task Genealogy_shows_billet_batches_and_loaded_baskets()
     {
-        var tree = await _client.GetFromJsonAsync<GenealogyDto>("/api/heats/h-26031/genealogy", Json);
+        var tree = await _client.GetFromJsonAsync<GenealogyDto>("/api/heats/al-26031/genealogy", Json);
 
-        Assert.Equal(("H-26031", 6), (tree!.HeatNumber, tree.PieceCount));
-        Assert.Equal(["H-26031-1", "H-26031-2"], tree.Pieces.Select(p => p.PieceNumber));
-        Assert.All(tree.Pieces, ingot => Assert.Equal(2, ingot.Children.Count));
+        Assert.Equal(("AL-26031", 8), (tree!.HeatNumber, tree.PieceCount));
+        Assert.Equal(["AL-26031-B01", "AL-26031-B02"], tree.Pieces.Select(p => p.PieceNumber));
+        Assert.Equal([4, 2], tree.Pieces.Select(p => p.Children.Count));
         Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync("/api/heats/H-00000/genealogy")).StatusCode);
     }
 
@@ -184,5 +184,88 @@ public sealed class ApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var response = await _client.PostAsJsonAsync("/api/orders", new { orderNumber = "TO-2026-0099" });
 
         Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Plc_endpoint_exposes_durable_envelope_and_policy_but_no_write_operation()
+    {
+        using var isolated = new ApiFactory();
+        using var client = isolated.CreateClient();
+        using var json = JsonDocument.Parse(await client.GetStringAsync("/api/plc"));
+        Assert.Equal(15, json.RootElement.GetProperty("timeoutSeconds").GetInt32());
+        Assert.Equal(3, json.RootElement.GetProperty("maxAttempts").GetInt32());
+        var command = Assert.Single(json.RootElement.GetProperty("commands").EnumerateArray());
+        Assert.Equal("Pending", command.GetProperty("status").GetString());
+        Assert.Equal(64, command.GetProperty("payloadHash").GetString()!.Length);
+        Assert.NotEqual(Guid.Empty, command.GetProperty("id").GetGuid());
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, (await client.PostAsJsonAsync("/api/plc", new { })).StatusCode);
+    }
+
+    [Fact]
+    public async Task Schedule_endpoint_exposes_next_action_and_quality_blocks_without_changing_plant()
+    {
+        using var isolated = new ApiFactory();
+        using var client = isolated.CreateClient();
+        var repository = isolated.Services.GetRequiredService<IOrderRepository>();
+        var before = await repository.GetPlantStateAsync();
+        using var json = JsonDocument.Parse(await client.GetStringAsync("/api/schedule"));
+        Assert.Equal("ArriveTransport", json.RootElement.GetProperty("next").GetProperty("kind").GetString());
+        Assert.Contains(json.RootElement.GetProperty("blocked").EnumerateArray(),
+            b => b.GetProperty("reference").GetString() == "AL-26052-K03" && b.GetProperty("reason").GetString() == "QualityHold");
+        var after = await repository.GetPlantStateAsync();
+        Assert.Equal(before.Baskets.Select(b => b.Version), after.Baskets.Select(b => b.Version));
+        Assert.Equal(before.Orders.Count, after.Orders.Count);
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, (await client.PostAsJsonAsync("/api/schedule", new { })).StatusCode);
+    }
+
+    [Fact]
+    public async Task Labels_are_unavailable_before_approval_and_expose_preserved_package_traceability_afterwards()
+    {
+        using var isolated = new ApiFactory();
+        using var client = isolated.CreateClient();
+        var repository = isolated.Services.GetRequiredService<IOrderRepository>();
+        var basket = (await repository.GetPlantStateAsync()).Baskets.Single(b => b.Number == "AL-26052-K01");
+        await repository.StartPackingAsync(basket.Number, basket.Version, "test", DateTime.UtcNow);
+        var package = Assert.Single((await repository.GetPlantStateAsync()).Packages);
+        await repository.CompletePackingAsync(package.Number, package.Version, "test", DateTime.UtcNow);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/packages/{package.Number}/label")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/api/packages/UNKNOWN/label")).StatusCode);
+        package = Assert.Single((await repository.GetPlantStateAsync()).Packages);
+        await repository.InspectPackageAsync(package.Number, package.Version, true, true, "QA", "Checked", DateTime.UtcNow);
+        using var response = await client.GetAsync($"/api/packages/{package.Number}/label");
+        response.EnsureSuccessStatusCode();
+        Assert.Equal("text/plain", response.Content.Headers.ContentType!.MediaType);
+        Assert.Contains(package.MaterialLotNumber, await response.Content.ReadAsStringAsync());
+        using var json = JsonDocument.Parse(await client.GetStringAsync("/api/plant"));
+        var empty = json.RootElement.GetProperty("baskets").EnumerateArray().Single(b => b.GetProperty("basketNumber").GetString() == basket.Number);
+        Assert.True(empty.GetProperty("isEmpty").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, empty.GetProperty("materialLotNumber").ValueKind);
+        Assert.Equal(1, json.RootElement.GetProperty("packages").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task Plant_endpoint_exposes_basket_positions_and_reserved_slots()
+    {
+        using var response = await _client.GetAsync("/api/plant");
+        response.EnsureSuccessStatusCode();
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var stations = json.RootElement.GetProperty("stations").EnumerateArray().ToList();
+        Assert.Equal(7, stations.Count);
+        var packing = stations.Single(s => s.GetProperty("id").GetString() == "PACK-01");
+        Assert.Equal(1, packing.GetProperty("reserved").GetInt32());
+        Assert.Equal(0, packing.GetProperty("occupied").GetInt32());
+        var baskets = json.RootElement.GetProperty("baskets").EnumerateArray().ToList();
+        Assert.Equal(12, baskets.Count);
+        var moving = Assert.Single(baskets, b => b.GetProperty("isMoving").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, moving.GetProperty("location").ValueKind);
+        Assert.Equal("PACK-01", moving.GetProperty("reservedLocationId").GetString());
+        Assert.False(string.IsNullOrEmpty(moving.GetProperty("activeTransportNumber").GetString()));
+        Assert.Contains(json.RootElement.GetProperty("materialLots").EnumerateArray(),
+            lot => lot.GetProperty("number").GetString() == moving.GetProperty("materialLotNumber").GetString());
+        var equipment = json.RootElement.GetProperty("equipment").EnumerateArray().ToList();
+        Assert.Equal(7, equipment.Count);
+        Assert.Equal("Busy", equipment.Single(e => e.GetProperty("id").GetString() == "SHUTTLE-01").GetProperty("status").GetString());
+        Assert.Equal(3, json.RootElement.GetProperty("recipes").GetArrayLength());
+        Assert.Equal(0, json.RootElement.GetProperty("ovenCycles").GetArrayLength());
     }
 }

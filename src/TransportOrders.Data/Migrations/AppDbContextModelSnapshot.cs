@@ -17,6 +17,784 @@ namespace TransportOrders.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.11");
 
+            modelBuilder.Entity("TransportOrders.Core.AlarmEvent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Actor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("AlarmId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("AtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlarmId");
+
+                    b.ToTable("AlarmEvents", (string)null);
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.Basket", b =>
+                {
+                    b.Property<string>("Number")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("ActiveReturnId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ActiveTransportNumber")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ContentSequence")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1);
+
+                    b.Property<decimal>("LoadingLength")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LocationId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MaterialLotNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ReservedLocationId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Weight")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Number");
+
+                    b.HasIndex("ActiveReturnId");
+
+                    b.HasIndex("ActiveTransportNumber");
+
+                    b.HasIndex("LocationId");
+
+                    b.HasIndex("MaterialLotNumber");
+
+                    b.HasIndex("ReservedLocationId");
+
+                    b.ToTable("Baskets", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Baskets_Position", "(LocationId IS NOT NULL AND ReservedLocationId IS NULL AND ActiveTransportNumber IS NULL AND ActiveReturnId IS NULL) OR (LocationId IS NULL AND ReservedLocationId IS NOT NULL AND ((ActiveTransportNumber IS NOT NULL AND ActiveReturnId IS NULL) OR (ActiveTransportNumber IS NULL AND ActiveReturnId IS NOT NULL)))");
+                        });
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.BasketEvent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BasketNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("User")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BasketNumber");
+
+                    b.ToTable("BasketEvents", (string)null);
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.BasketReturn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ArrivedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ArrivedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BasketNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ContentSequence")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SourceLocation")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StartedBy")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TargetLocation")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BasketNumber")
+                        .IsUnique()
+                        .HasFilter("ArrivedAt IS NULL");
+
+                    b.HasIndex("SourceLocation");
+
+                    b.HasIndex("TargetLocation");
+
+                    b.ToTable("BasketReturns", (string)null);
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.EquipmentEvent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("By")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EquipmentId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EquipmentId");
+
+                    b.ToTable("EquipmentEvents", (string)null);
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.MaterialLot", b =>
+                {
+                    b.Property<string>("Number")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BatchNumber")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Material")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Number");
+
+                    b.ToTable("MaterialLots", (string)null);
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.OvenCycle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CoolingMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ElapsedMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EquipmentId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("HeatingMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("HoldingMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Phase")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RecipeId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RecipeRevision")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1);
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("TargetTemperature")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EquipmentId")
+                        .IsUnique()
+                        .HasFilter("Phase <> 'Completed'");
+
+                    b.HasIndex("RecipeId");
+
+                    b.ToTable("OvenCycles", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_OvenCycles_Elapsed", "ElapsedMinutes >= 0 AND ElapsedMinutes <= HeatingMinutes + HoldingMinutes + CoolingMinutes");
+                        });
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.OvenCycleLoad", b =>
+                {
+                    b.Property<Guid>("CycleId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BasketNumber")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ContentSequence")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1);
+
+                    b.Property<string>("MaterialLotNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("CycleId", "BasketNumber");
+
+                    b.HasIndex("BasketNumber");
+
+                    b.HasIndex("MaterialLotNumber");
+
+                    b.ToTable("OvenCycleLoads", (string)null);
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.OvenRecipe", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Alloy")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CoolingMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("HeatingMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("HoldingMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Revision")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1);
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("Validated");
+
+                    b.Property<decimal>("TargetTemperature")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("OvenRecipes", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_OvenRecipes_Durations", "HeatingMinutes > 0 AND HoldingMinutes > 0 AND CoolingMinutes > 0");
+                        });
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.PackageEvent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PackageNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("User")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PackageNumber");
+
+                    b.ToTable("PackageEvents", (string)null);
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.PackedPackage", b =>
+                {
+                    b.Property<string>("Number")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BatchNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ContentSequence")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EquipmentId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LabelText")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("LoadingLength")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LocationId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Material")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MaterialLotNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool?>("QuantityVerified")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ReservedLocationId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ShippedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceBasketNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool?>("VisualPassed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("Weight")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Number");
+
+                    b.HasIndex("EquipmentId");
+
+                    b.HasIndex("LocationId");
+
+                    b.HasIndex("MaterialLotNumber");
+
+                    b.HasIndex("ReservedLocationId");
+
+                    b.HasIndex("SourceBasketNumber", "ContentSequence")
+                        .IsUnique();
+
+                    b.ToTable("PackedPackages", (string)null);
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.PlantAlarm", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AcknowledgedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("AcknowledgedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ClearedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Detail")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("RaisedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique()
+                        .HasFilter("IsActive = 1");
+
+                    b.ToTable("PlantAlarms", (string)null);
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.PlantEquipment", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ActiveOperation")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Condition")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LocationId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LocationId")
+                        .IsUnique();
+
+                    b.ToTable("PlantEquipment", (string)null);
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.PlantLocation", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PlantLocations", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PlantLocations_Capacity", "Capacity > 0");
+                        });
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.PlcCommand", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("AppliedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AppliedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ContractVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DeadlineAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EquipmentId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastAttemptAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastError")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("LastSequence")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Operation")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PayloadHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Target")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Kind", "Operation")
+                        .IsUnique();
+
+                    b.ToTable("PlcCommands", (string)null);
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.PlcEvent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Actor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CommandId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Detail")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommandId");
+
+                    b.ToTable("PlcEvents", (string)null);
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.PlcSimulationSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ChangedBy")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Connected")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("SuppressAcknowledgements")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PlcSimulationSettings", (string)null);
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.RecipeEvent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Actor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Alloy")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("AtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CoolingMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("HeatingMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("HoldingMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RecipeId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("TargetTemperature")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecipeId");
+
+                    b.ToTable("RecipeEvents", (string)null);
+                });
+
             modelBuilder.Entity("TransportOrders.Core.StatusChange", b =>
                 {
                     b.Property<int>("Id")
@@ -126,6 +904,11 @@ namespace TransportOrders.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("BasketContentSequence")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1);
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -204,6 +987,238 @@ namespace TransportOrders.Data.Migrations
                     b.ToTable("TransportOrders", (string)null);
                 });
 
+            modelBuilder.Entity("TransportOrders.Data.PlcInboxEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CommandId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ReceivedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Result")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommandId");
+
+                    b.ToTable("PlcInbox", (string)null);
+                });
+
+            modelBuilder.Entity("TransportOrders.Data.PlcSimulatorExecution", b =>
+                {
+                    b.Property<Guid>("CommandId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EquipmentId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PayloadHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Target")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("CommandId");
+
+                    b.ToTable("PlcSimulatorExecutions", (string)null);
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.AlarmEvent", b =>
+                {
+                    b.HasOne("TransportOrders.Core.PlantAlarm", null)
+                        .WithMany("History")
+                        .HasForeignKey("AlarmId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.Basket", b =>
+                {
+                    b.HasOne("TransportOrders.Core.BasketReturn", null)
+                        .WithMany()
+                        .HasForeignKey("ActiveReturnId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TransportOrders.Core.Transport", null)
+                        .WithMany()
+                        .HasForeignKey("ActiveTransportNumber")
+                        .HasPrincipalKey("TransportNumber")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TransportOrders.Core.PlantLocation", null)
+                        .WithMany()
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TransportOrders.Core.MaterialLot", null)
+                        .WithMany()
+                        .HasForeignKey("MaterialLotNumber")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TransportOrders.Core.PlantLocation", null)
+                        .WithMany()
+                        .HasForeignKey("ReservedLocationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.BasketEvent", b =>
+                {
+                    b.HasOne("TransportOrders.Core.Basket", null)
+                        .WithMany("History")
+                        .HasForeignKey("BasketNumber")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.BasketReturn", b =>
+                {
+                    b.HasOne("TransportOrders.Core.Basket", null)
+                        .WithMany()
+                        .HasForeignKey("BasketNumber")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TransportOrders.Core.PlantLocation", null)
+                        .WithMany()
+                        .HasForeignKey("SourceLocation")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TransportOrders.Core.PlantLocation", null)
+                        .WithMany()
+                        .HasForeignKey("TargetLocation")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.EquipmentEvent", b =>
+                {
+                    b.HasOne("TransportOrders.Core.PlantEquipment", null)
+                        .WithMany("History")
+                        .HasForeignKey("EquipmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.OvenCycle", b =>
+                {
+                    b.HasOne("TransportOrders.Core.PlantEquipment", null)
+                        .WithMany()
+                        .HasForeignKey("EquipmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TransportOrders.Core.OvenRecipe", null)
+                        .WithMany()
+                        .HasForeignKey("RecipeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.OvenCycleLoad", b =>
+                {
+                    b.HasOne("TransportOrders.Core.Basket", null)
+                        .WithMany()
+                        .HasForeignKey("BasketNumber")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TransportOrders.Core.OvenCycle", null)
+                        .WithMany("Load")
+                        .HasForeignKey("CycleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TransportOrders.Core.MaterialLot", null)
+                        .WithMany()
+                        .HasForeignKey("MaterialLotNumber")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.PackageEvent", b =>
+                {
+                    b.HasOne("TransportOrders.Core.PackedPackage", null)
+                        .WithMany("History")
+                        .HasForeignKey("PackageNumber")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.PackedPackage", b =>
+                {
+                    b.HasOne("TransportOrders.Core.PlantEquipment", null)
+                        .WithMany()
+                        .HasForeignKey("EquipmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TransportOrders.Core.PlantLocation", null)
+                        .WithMany()
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TransportOrders.Core.MaterialLot", null)
+                        .WithMany()
+                        .HasForeignKey("MaterialLotNumber")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TransportOrders.Core.PlantLocation", null)
+                        .WithMany()
+                        .HasForeignKey("ReservedLocationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TransportOrders.Core.Basket", null)
+                        .WithMany()
+                        .HasForeignKey("SourceBasketNumber")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.PlantEquipment", b =>
+                {
+                    b.HasOne("TransportOrders.Core.PlantLocation", null)
+                        .WithMany()
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.PlcEvent", b =>
+                {
+                    b.HasOne("TransportOrders.Core.PlcCommand", null)
+                        .WithMany("History")
+                        .HasForeignKey("CommandId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.RecipeEvent", b =>
+                {
+                    b.HasOne("TransportOrders.Core.OvenRecipe", null)
+                        .WithMany("History")
+                        .HasForeignKey("RecipeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("TransportOrders.Core.StatusChange", b =>
                 {
                     b.HasOne("TransportOrders.Core.TransportOrder", null)
@@ -220,6 +1235,59 @@ namespace TransportOrders.Data.Migrations
                         .HasForeignKey("TransportNumber")
                         .HasPrincipalKey("TransportNumber")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("TransportOrders.Data.PlcInboxEntry", b =>
+                {
+                    b.HasOne("TransportOrders.Core.PlcCommand", null)
+                        .WithMany()
+                        .HasForeignKey("CommandId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TransportOrders.Data.PlcSimulatorExecution", b =>
+                {
+                    b.HasOne("TransportOrders.Core.PlcCommand", null)
+                        .WithMany()
+                        .HasForeignKey("CommandId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.Basket", b =>
+                {
+                    b.Navigation("History");
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.OvenCycle", b =>
+                {
+                    b.Navigation("Load");
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.OvenRecipe", b =>
+                {
+                    b.Navigation("History");
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.PackedPackage", b =>
+                {
+                    b.Navigation("History");
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.PlantAlarm", b =>
+                {
+                    b.Navigation("History");
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.PlantEquipment", b =>
+                {
+                    b.Navigation("History");
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.PlcCommand", b =>
+                {
+                    b.Navigation("History");
                 });
 
             modelBuilder.Entity("TransportOrders.Core.TransportOrder", b =>

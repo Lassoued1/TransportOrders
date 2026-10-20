@@ -25,11 +25,13 @@ public sealed record OrderDto(
     DateTime CreatedAt,
     DateTime UpdatedAt)
 {
+    public int BasketContentSequence { get; init; }
+    public string Revision { get; init; } = "";
     public static OrderDto From(TransportOrder order, DateTime utcNow) => new(
         order.Id, order.OrderNumber, order.HeatNumber, order.PieceNumber, order.ParentPieceNumber, order.Material,
         order.Quantity, order.Weight, order.LoadingLength, order.SourceLocation, order.TargetLocation, order.Status,
         order.Priority, order.TransportNumber, order.HoldReason, order.DueAt, order.IsOverdue(utcNow),
-        order.CreatedAt, order.UpdatedAt);
+        order.CreatedAt, order.UpdatedAt) { BasketContentSequence = order.BasketContentSequence, Revision = OrderRevision.For(order) };
 }
 
 public sealed record StatusChangeDto(OrderStatus? FromStatus, OrderStatus ToStatus, DateTime ChangedAt, string ChangedBy, string? Note)

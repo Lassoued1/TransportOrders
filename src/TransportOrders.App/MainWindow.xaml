@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:TransportOrders.App.ViewModels"
         xmlns:svc="clr-namespace:TransportOrders.App.Services"
+        xmlns:views="clr-namespace:TransportOrders.App.Views"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
         Title="{svc:Tr Window_Title}"
@@ -138,6 +139,44 @@
         </Style>
     </Window.Resources>
 
+    <Border Background="{StaticResource WindowBrush}">
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Background="{StaticResource SurfaceBrush}"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="18,8">
+            <DockPanel>
+            <Button DockPanel.Dock="Left" Content="{svc:Tr OperatorApi_Refresh}" Command="{Binding ReloadCommand}"
+                    ToolTip="{svc:Tr OperatorApi_RefreshTip}" HorizontalAlignment="Left" />
+            <TextBlock DockPanel.Dock="Left" Text="{Binding OperatorStatus}" VerticalAlignment="Center" Margin="12,0"
+                       MaxWidth="650" TextTrimming="CharacterEllipsis" ToolTip="{Binding OperatorStatus}" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <TextBlock Text="{svc:Tr Language_Label}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                <ListBox x:Name="GlobalLanguageSelector" Style="{StaticResource SegmentedList}"
+                         ItemsSource="{Binding Languages}" DisplayMemberPath="Label" SelectedValuePath="Key"
+                         SelectedValue="{Binding SelectedLanguage}" ToolTip="{svc:Tr Language_Tip}"
+                         AutomationProperties.Name="Language" />
+            </StackPanel>
+            </DockPanel>
+        </Border>
+    <TabControl Padding="0" BorderThickness="0" Background="{StaticResource WindowBrush}">
+        <TabItem Header="{svc:Tr Plant_Tab}">
+            <views:ExtrusionOverview DataContext="{Binding Extrusion}" />
+        </TabItem>
+        <TabItem Header="{svc:Tr Plant_PackingTab}">
+            <views:PackingOverview DataContext="{Binding Extrusion}" />
+        </TabItem>
+        <TabItem Header="{svc:Tr Schedule_Tab}">
+            <views:ScheduleOverview DataContext="{Binding Extrusion}" />
+        </TabItem>
+        <TabItem Header="{svc:Tr Plc_Tab}">
+            <views:PlcOverview DataContext="{Binding Extrusion}" />
+        </TabItem>
+        <TabItem Header="{svc:Tr Alarm_Tab}">
+            <views:AlarmOverview DataContext="{Binding Alarms}" />
+        </TabItem>
+        <TabItem Header="{svc:Tr Recipe_Tab}">
+            <views:RecipeOverview DataContext="{Binding Recipes}" />
+        </TabItem>
+        <TabItem Header="{svc:Tr Plant_OrdersTab}" IsEnabled="{Binding Extrusion.CanEditOrders}">
     <DockPanel>
         <!-- Header: title, barcode scan, language, reload -->
         <Border DockPanel.Dock="Top" Background="{StaticResource SurfaceBrush}"
@@ -184,12 +223,6 @@
                             </TextBox>
                         </Grid>
                     </Border>
-                    <ListBox Style="{StaticResource SegmentedList}" Margin="0,0,12,0"
-                             ItemsSource="{Binding Languages}"
-                             DisplayMemberPath="Label" SelectedValuePath="Key"
-                             SelectedValue="{Binding SelectedLanguage}"
-                             ToolTip="{svc:Tr Language_Tip}"
-                             AutomationProperties.Name="Language" />
                     <Button Command="{Binding ReloadCommand}" ToolTip="{svc:Tr Action_Reload_Tip}"
                             AutomationProperties.Name="Reload">
                         <StackPanel Orientation="Horizontal">
@@ -446,7 +479,8 @@
                         </DataGrid.CellStyle>
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="{svc:Tr Col_OrderNo}" Binding="{Binding OrderNumber}" Width="106" FontWeight="SemiBold" />
-                            <DataGridTextColumn Header="{svc:Tr Col_Heat}" Binding="{Binding HeatNumber}" Width="68" />
+                            <DataGridTextColumn Header="{svc:Tr Details_Piece}" Binding="{Binding PieceNumber}" Width="120" />
+                            <DataGridTextColumn Header="{svc:Tr Col_Heat}" Binding="{Binding HeatNumber}" Width="90" />
                             <DataGridTextColumn Header="{svc:Tr Col_Material}" Binding="{Binding Material}" Width="1.15*" MinWidth="80"
                                                 ElementStyle="{StaticResource TrimmedText}" />
                             <DataGridTextColumn Header="{svc:Tr Col_Length}" Binding="{Binding LengthText}" SortMemberPath="LoadingLength"
@@ -688,4 +722,8 @@
             </Grid>
         </Grid>
     </DockPanel>
+        </TabItem>
+    </TabControl>
+    </DockPanel>
+    </Border>
 </Window>

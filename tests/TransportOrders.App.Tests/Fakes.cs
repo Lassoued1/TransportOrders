@@ -13,12 +13,53 @@ internal sealed class FakeOrderRepository(DateTime createdAt) : IOrderRepository
     private readonly List<Spec> _specs = [];
     private readonly Dictionary<string, List<StatusChange>> _stored = [];
     private readonly Dictionary<string, Transport> _transports = [];
+    private readonly PlantEquipment _shuttle = new(PlantEquipment.SharedShuttle, EquipmentKind.Shuttle, null, createdAt);
+
+    public Task StartPackingAsync(string basketNumber, Guid basketVersion, string user, DateTime now, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    public Task CompletePackingAsync(string packageNumber, Guid version, string user, DateTime now, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    public Task InspectPackageAsync(string packageNumber, Guid version, bool visualPassed, bool quantityVerified, string user, string reason, DateTime now, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    public Task StartPackageShippingAsync(string packageNumber, Guid version, string user, DateTime now, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    public Task CompletePackageShippingAsync(string packageNumber, Guid version, string user, DateTime now, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    public Task StartEmptyReturnAsync(string basketNumber, Guid version, string target, string user, DateTime now, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    public Task CompleteEmptyReturnAsync(Guid returnId, Guid version, string user, DateTime now, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    public Task ReloadBasketAsync(string basketNumber, Guid version, string lotNumber, int quantity, decimal weight, decimal loadingLength, string targetOven, string user, DateTime now, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+    public Task SetEquipmentControlAsync(string equipmentId, Guid expectedVersion, EquipmentMode mode,
+        EquipmentCondition condition, string user, string reason, DateTime now, CancellationToken cancellationToken = default)
+    {
+        ThrowIfFailing();
+        _shuttle.SetControl(mode, condition, user, reason, now);
+        return Task.CompletedTask;
+    }
+    public Task StartOvenCycleAsync(string equipmentId, string recipeId, IReadOnlyCollection<string> basketNumbers,
+        string user, DateTime now, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    public Task AdvanceOvenCycleAsync(Guid cycleId, Guid expectedVersion, int minutes, string user, DateTime now,
+        CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
     public int SaveCount { get; private set; }
 
     public Exception? FailNextSave { get; set; }
 
     public IReadOnlyCollection<Transport> Transports => _transports.Values;
+
+    public async Task<PlantState> GetPlantStateAsync(CancellationToken cancellationToken = default)
+    {
+        var orders = await GetAllAsync(cancellationToken);
+        var latest = orders.GroupBy(o => o.PieceNumber).Select(g => g.Last()).ToList();
+        var lots = latest.GroupBy(o => o.ParentPieceNumber ?? o.HeatNumber)
+            .Select(g => new MaterialLot(g.Key, g.First().HeatNumber, g.First().Material)).ToList();
+        var locations = ExtrusionPlant.Stations.Select(s => new PlantLocation(s.Id, s.Kind, s.Capacity)).ToList();
+        foreach (var id in orders.SelectMany(o => new[] { o.SourceLocation, o.TargetLocation }).Distinct())
+            if (locations.All(l => l.Id != id)) locations.Add(new(id, StationKind.Buffer, 100));
+        var baskets = latest.Select(o =>
+        {
+            var basket = new Basket(o.PieceNumber, o.ParentPieceNumber ?? o.HeatNumber, o.Quantity, o.Weight,
+                o.LoadingLength, o.Status == OrderStatus.Done ? o.TargetLocation : o.SourceLocation);
+            if (o.Status == OrderStatus.InTransit) basket.Depart(o.SourceLocation, o.TargetLocation, o.TransportNumber!);
+            return basket;
+        }).ToList();
+        return new(baskets, lots, locations, orders, _transports.Values.ToList()) { Equipment = [_shuttle] };
+    }
 
     public FakeOrderRepository Add(string number, string heat, string piece, string? parent, decimal metres, decimal tonnes,
         string from = "Forge", string to = "Heat treatment", OrderPriority priority = OrderPriority.Normal, TimeSpan? dueIn = null)
@@ -58,7 +99,7 @@ internal sealed class FakeOrderRepository(DateTime createdAt) : IOrderRepository
         throw new NotSupportedException();
 
     public Task<TransportOrder?> GetByOrderNumberAsync(string orderNumber, CancellationToken cancellationToken = default) =>
-        throw new NotSupportedException();
+        Task.FromResult(_specs.FirstOrDefault(s => s.Number == orderNumber) is { } spec ? Load(spec) : null);
 
     public Task SaveAsync(TransportOrder order, CancellationToken cancellationToken = default)
     {

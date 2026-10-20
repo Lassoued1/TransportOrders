@@ -1,7 +1,7 @@
 namespace TransportOrders.Core;
 
 /// <summary>One entry of an order's audit trail: who changed the status, when, from what, and why.</summary>
-public sealed class StatusChange
+public sealed partial class StatusChange
 {
     // Used by EF Core.
     private StatusChange()

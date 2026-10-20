@@ -22,8 +22,13 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly ILocalizer _localizer;
     private readonly ICurrentUser _user;
     private readonly TimeProvider _clock;
-    private readonly TimeZoneInfo _plantTimeZone;
+    private TimeZoneInfo _plantTimeZone;
     private readonly ILogger<MainViewModel> _logger;
+    private readonly IOperatorCommandClient? _operatorCommands;
+    private HashSet<string> _permissions = new(PlantPermissions.All, StringComparer.Ordinal);
+    private OperatorAccessSnapshot? _operatorAccess;
+    private bool _accessChecked;
+    private IOperatorCommandClient Commands => _operatorCommands ?? throw new InvalidOperationException(_localizer["OperatorApi_Unavailable"]);
     private readonly List<OrderRowViewModel> _allOrders = [];
     private readonly Dictionary<string, Transport> _transports = [];
     private Func<string>? _describeLastAction;
@@ -36,7 +41,7 @@ public sealed partial class MainViewModel : ObservableObject
         ICurrentUser user,
         TimeProvider clock,
         TimeZoneInfo plantTimeZone,
-        ILogger<MainViewModel> logger)
+        ILogger<MainViewModel> logger, IOperatorCommandClient? operatorCommands = null)
     {
         _repository = repository;
         _messages = messages;
@@ -46,9 +51,10 @@ public sealed partial class MainViewModel : ObservableObject
         _clock = clock;
         _plantTimeZone = plantTimeZone;
         _logger = logger;
+        _operatorCommands = operatorCommands;
 
         StatusFilters = [new FilterOption(AllStatuses, ""), .. Enum.GetNames<OrderStatus>().Select(s => new FilterOption(s, ""))];
-        Languages = Localizer.SupportedLanguages.Select(l => new FilterOption(l, l.ToUpperInvariant())).ToList();
+        Languages = Localizer.SupportedLanguages.Select(l => new FilterOption(l, l == "de" ? "Deutsch" : "English")).ToList();
         _selectedLanguage = localizer.Language;
         localizer.LanguageChanged += (_, _) => OnLanguageChanged();
         ApplyLanguage();
@@ -60,6 +66,47 @@ public sealed partial class MainViewModel : ObservableObject
     public IReadOnlyList<FilterOption> StatusFilters { get; }
 
     public IReadOnlyList<FilterOption> Languages { get; }
+
+    public ExtrusionViewModel? Extrusion { get; private set; }
+    public AlarmViewModel? Alarms { get; private set; }
+    public RecipeViewModel? Recipes { get; private set; }
+    public void InitializeRecipes(RecipeViewModel recipes) { Recipes = recipes; OnPropertyChanged(nameof(Recipes)); }
+    public void InitializeAlarms(AlarmViewModel alarms) { Alarms = alarms; OnPropertyChanged(nameof(Alarms)); }
+    [ObservableProperty] private string _operatorStatus = string.Empty;
+    public void SetPlantTimeZone(string id)
+    {
+        _plantTimeZone = TimeZoneInfo.FindSystemTimeZoneById(id);
+        RefreshClock();
+    }
+    public void SetOperatorAccess(OperatorAccessSnapshot? access)
+    {
+        _accessChecked = true; _operatorAccess = access;
+        _permissions = new(access?.Permissions ?? [], StringComparer.Ordinal);
+        OperatorStatus = access is null ? _localizer["Access_Unavailable"] : _localizer.Format("Access_Status", access.User,
+            access.Permissions.Count == 0 ? _localizer["Access_ReadOnly"] : string.Join(", ", access.Roles.Select(r => _localizer[$"Access_{r}"])));
+        Extrusion?.SetPermissions(_permissions);
+        PlanLoadsCommand.NotifyCanExecuteChanged(); HoldOrReleaseCommand.NotifyCanExecuteChanged();
+        CancelOrderCommand.NotifyCanExecuteChanged(); CompleteTransportCommand.NotifyCanExecuteChanged();
+    }
+
+    public void InitializeExtrusion(ExtrusionSimulator simulator, IEquipmentControlClient? equipmentControls = null)
+    {
+        Extrusion = new ExtrusionViewModel(simulator, async () =>
+        {
+            if (IsBusy) return new SimulationResult(SimulationAction.Waiting);
+            SetBusy(_localizer["Plant_Stepping"]);
+            try
+            {
+                return await Commands.StepAsync();
+            }
+            finally
+            {
+                await LoadAsync();
+            }
+        }, _localizer, _messages, LoadAsync, equipmentControls, _operatorCommands);
+        OnPropertyChanged(nameof(Extrusion));
+        if (_accessChecked) SetOperatorAccess(_operatorAccess);
+    }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ClearFiltersCommand))]
@@ -156,14 +203,17 @@ public sealed partial class MainViewModel : ObservableObject
 
     private DateTime UtcNow => _clock.GetUtcNow().UtcDateTime;
 
-    public async Task LoadAsync()
+    public Task LoadAsync() => LoadAsync(false);
+
+    public async Task LoadAsync(bool silent)
     {
         var selectedNumber = SelectedOrder?.OrderNumber;
         SetBusy(_localizer["Busy_Loading"]);
         try
         {
-            var orders = await Task.Run(() => _repository.GetAllAsync());
-            var transports = await Task.Run(() => _repository.GetTransportsAsync());
+            var state = await Task.Run(() => _repository.GetPlantStateAsync());
+            var orders = state.Orders;
+            var transports = state.Transports;
 
             _transports.Clear();
             foreach (var transport in transports)
@@ -173,6 +223,7 @@ public sealed partial class MainViewModel : ObservableObject
 
             _allOrders.Clear();
             _allOrders.AddRange(orders.Select(o => new OrderRowViewModel(o, _localizer, () => UtcNow, TransportOf)));
+            Extrusion?.Refresh(state);
             _logger.LogInformation("Loaded {Count} orders and {Transports} transports", _allOrders.Count, _transports.Count);
 
             RefreshList(_allOrders.FirstOrDefault(r => r.OrderNumber == selectedNumber));
@@ -180,7 +231,7 @@ public sealed partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Loading orders failed");
-            _messages.ShowError(_localizer.Format("Error_Load", ex.GetBaseException().Message));
+            if (!silent) _messages.ShowError(_localizer.Format("Error_Load", ex.GetBaseException().Message));
         }
         finally
         {
@@ -200,7 +251,11 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand(CanExecute = nameof(CanReload))]
-    private Task ReloadAsync() => LoadAsync();
+    private Task ReloadAsync()
+    {
+        Extrusion?.ResetOperatorDrafts();
+        return LoadAsync();
+    }
 
     private bool CanReload() => !IsBusy;
 
@@ -255,7 +310,9 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         }
 
-        var row = _allOrders.FirstOrDefault(r => string.Equals(r.OrderNumber, code, StringComparison.OrdinalIgnoreCase));
+        var row = _allOrders.FirstOrDefault(r => string.Equals(r.OrderNumber, code, StringComparison.OrdinalIgnoreCase))
+            ?? _allOrders.Where(r => string.Equals(r.PieceNumber, code, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(r => r.CreatedAt).ThenByDescending(r => r.OrderNumber, StringComparer.Ordinal).FirstOrDefault();
         if (row is null)
         {
             _logger.LogWarning("Scanned code {Code:l} matches no order", code);
@@ -279,47 +336,53 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanPlanLoads))]
     private void PlanLoads() =>
         _dialogs.ShowLoadPlan(new LoadPlanViewModel(
-            () => LoadPlanner.Plan(_allOrders.Select(r => r.Order), Fleet.Default, UtcNow),
+            () => LoadPlanner.Plan(_allOrders.Select(r => r.Order), Fleet.Extrusion, UtcNow),
             DispatchAsync,
             _localizer));
 
-    private bool CanPlanLoads() => !IsBusy;
+    private bool CanPlanLoads() => !IsBusy && _permissions.Contains(PlantPermissions.Dispatch);
 
     /// <summary>Dispatches one proposal; returns the transport number, or null when it failed (the user was told why).</summary>
     public async Task<string?> DispatchAsync(LoadProposal proposal, PartLoadReason? reason)
     {
+        if (IsBusy || !_permissions.Contains(PlantPermissions.Dispatch)) return null;
         SetBusy(_localizer["Busy_Dispatching"]);
         try
         {
-            var number = await Task.Run(() => _repository.NextTransportNumberAsync(UtcNow));
-            Transport transport;
-            try
+            if (Extrusion?.IsFaulted == true)
             {
-                transport = Transport.Dispatch(number, proposal.Vehicle, proposal.Orders, _user.Name, UtcNow, reason);
-            }
-            catch (TransportRuleException ex)
-            {
-                _messages.ShowError(_localizer.Format("Error_Dispatch", ex.Message));
+                _messages.ShowError(_localizer["Plant_Result_Faulted"]);
                 return null;
             }
-
+            // The manual planner follows the same physical reservations as the simulator.
+            var current = await _repository.GetPlantStateAsync();
+            var positions = current.Locate();
+            if (current.Locations.FirstOrDefault(s => s.Id == proposal.TargetLocation) is { } station
+                && (positions.Any(b => b.IsMoving)
+                    || current.Occupied(station.Id) + current.Reserved(station.Id)
+                        + proposal.Orders.Count > station.Capacity))
+            {
+                _messages.ShowError(_localizer["Plant_DestinationBlocked"]);
+                return null;
+            }
+            string number;
             try
             {
-                await Task.Run(() => _repository.SaveTransportAsync(transport, proposal.Orders));
+                number = await Commands.DispatchAsync(proposal, reason);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Saving transport {Transport:l} failed", number);
-                _messages.ShowError(_localizer.Format("Error_Dispatch", ex.GetBaseException().Message));
+                _logger.LogError(ex, "Central transport dispatch failed");
+                _messages.ShowError(_localizer.Format("Error_Dispatch", ex.Message));
                 await LoadAsync();
                 return null;
             }
 
             _logger.LogInformation(
                 "{Transport:l} dispatched by {User:l}: {Vehicle:l} {From:l} -> {To:l}, {Orders} orders, {Fill:P0} of the loading length{Reason:l}",
-                number, _user.Name, transport.Vehicle.ToString(), transport.SourceLocation, transport.TargetLocation,
-                transport.OrderCount, transport.FillRate, reason is null ? string.Empty : $", part load: {reason}");
-            _describeLastAction = () => _localizer.Format("LastAction_Dispatch", number, transport.OrderCount, transport.FillRate);
+                number, _user.Name, proposal.Vehicle.Type.ToString(), proposal.SourceLocation, proposal.TargetLocation,
+                proposal.Orders.Count, proposal.FillRate, reason is null ? string.Empty : $", part load: {reason}");
+            _describeLastAction = () => _localizer.Format("LastAction_Dispatch", number, proposal.Orders.Count, proposal.FillRate);
             await LoadAsync();
             return number;
         }
@@ -339,23 +402,29 @@ public sealed partial class MainViewModel : ObservableObject
 
         if (row.Status == OrderStatus.OnHold)
         {
-            await ChangeStatusAsync(OrderStatus.Planned, null);
+            await ChangeStatusAsync(OrderStatus.Planned, null, row.Order);
             return;
         }
 
         var reason = _dialogs.AskForReason(_localizer["Hold_Title"], _localizer.Format("Hold_Prompt", row.OrderNumber));
         if (reason is not null)
         {
-            await ChangeStatusAsync(OrderStatus.OnHold, reason);
+            await ChangeStatusAsync(OrderStatus.OnHold, reason, row.Order);
         }
     }
 
-    private bool CanHoldOrRelease() => CanChangeTo(OrderStatus.OnHold) || CanChangeTo(OrderStatus.Planned);
+    private bool CanHoldOrRelease() => _permissions.Contains(PlantPermissions.OrderQuality)
+        && (CanChangeTo(OrderStatus.OnHold) || CanChangeTo(OrderStatus.Planned));
 
     /// <summary>The selected order's transport arrived: every order on it becomes Done.</summary>
     [RelayCommand(CanExecute = nameof(CanCompleteTransport))]
     private async Task CompleteTransportAsync()
     {
+        if (Extrusion?.IsFaulted == true)
+        {
+            _messages.ShowError(_localizer["Plant_Result_Faulted"]);
+            return;
+        }
         if (SelectedOrder?.TransportNumber is not { } number || !_transports.TryGetValue(number, out var transport))
         {
             return;
@@ -370,15 +439,15 @@ public sealed partial class MainViewModel : ObservableObject
         SetBusy(_localizer.Format("Busy_Saving", number));
         try
         {
-            transport.Complete(orders, _user.Name, UtcNow);
-            await Task.Run(() => _repository.SaveTransportAsync(transport, orders));
+            await Commands.ConfirmTransportAsync(number, orders,
+                _localizer.Format("Confirm_Complete", number, transport.TargetLocation, transport.OrderCount));
             _logger.LogInformation("{Transport:l} arrived, confirmed by {User:l}", number, _user.Name);
             _describeLastAction = () => _localizer.Format("LastAction_Arrived", number);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Completing transport {Transport:l} failed", number);
-            _messages.ShowError(_localizer.Format("Error_SaveTransport", number, ex.GetBaseException().Message));
+            _messages.ShowError(_localizer.Format("Error_SaveTransport", number, ex.Message));
         }
 
         // Reload in both cases: after a failure the in-memory transport and orders already changed.
@@ -388,6 +457,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private bool CanCompleteTransport() =>
         !IsBusy
+        && _permissions.Contains(PlantPermissions.Arrival)
         && SelectedOrder is { Status: OrderStatus.InTransit, TransportNumber: { } number }
         && _transports.TryGetValue(number, out var transport)
         && transport.Status == TransportStatus.InTransit;
@@ -397,16 +467,18 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (SelectedOrder is { } row && _messages.Confirm(_localizer.Format("Confirm_Cancel", row.OrderNumber)))
         {
-            await ChangeStatusAsync(OrderStatus.Cancelled, null);
+            await ChangeStatusAsync(OrderStatus.Cancelled, null, row.Order);
         }
     }
 
-    private bool CanCancelOrder() => CanChangeTo(OrderStatus.Cancelled);
+    private bool CanCancelOrder() => _permissions.Contains(PlantPermissions.OrderCancel) && CanChangeTo(OrderStatus.Cancelled)
+        && !(SelectedOrder is { Status: OrderStatus.InTransit } moving
+            && ExtrusionPlant.Stations.Any(s => s.Id == moving.SourceLocation));
 
     private bool CanChangeTo(OrderStatus target) =>
         !IsBusy && SelectedOrder?.Order.CanTransitionTo(target) == true;
 
-    private async Task ChangeStatusAsync(OrderStatus target, string? note)
+    private async Task ChangeStatusAsync(OrderStatus target, string? note, TransportOrder? expectedOrder = null)
     {
         if (SelectedOrder is not { } row)
         {
@@ -414,23 +486,17 @@ public sealed partial class MainViewModel : ObservableObject
         }
 
         var previous = row.Status;
-        try
-        {
-            // The domain enforces the transition rules and records the history entry;
-            // the view model never assigns the status itself.
-            row.Order.TransitionTo(target, _user.Name, UtcNow, note);
-        }
-        catch (InvalidStatusTransitionException ex)
+        if (!row.Order.CanTransitionTo(target))
         {
             _messages.ShowError(_localizer.Format("Error_Transition", row.OrderNumber,
-                OrderRowViewModel.StatusName(_localizer, ex.From), OrderRowViewModel.StatusName(_localizer, ex.To)));
+                OrderRowViewModel.StatusName(_localizer, previous), OrderRowViewModel.StatusName(_localizer, target)));
             return;
         }
 
         SetBusy(_localizer.Format("Busy_Saving", row.OrderNumber));
         try
         {
-            await Task.Run(() => _repository.SaveAsync(row.Order));
+            await Commands.ChangeOrderAsync(expectedOrder ?? row.Order, target, note ?? OrderRowViewModel.StatusName(_localizer, target));
         }
         catch (Exception ex)
         {
@@ -439,7 +505,7 @@ public sealed partial class MainViewModel : ObservableObject
 
             // Stay busy while the message is shown: the in-memory order already changed,
             // so the commands must not offer actions for a status that was never saved.
-            _messages.ShowError(_localizer.Format("Error_Save", row.OrderNumber, ex.GetBaseException().Message));
+            _messages.ShowError(_localizer.Format("Error_Save", row.OrderNumber, ex.Message));
             await LoadAsync();
             return;
         }
@@ -449,8 +515,7 @@ public sealed partial class MainViewModel : ObservableObject
             row.OrderNumber, previous.ToString(), target.ToString(), _user.Name, note is null ? string.Empty : $" ({note})");
         _describeLastAction = () => _localizer.Format("LastAction", row.OrderNumber,
             OrderRowViewModel.StatusName(_localizer, previous), OrderRowViewModel.StatusName(_localizer, target));
-        row.Refresh();
-        RefreshList(row);
+        await LoadAsync();
     }
 
     partial void OnSelectedStatusFilterChanged(string value) => RefreshList(SelectedOrder);
@@ -475,6 +540,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void OnLanguageChanged()
     {
+        if (_accessChecked) SetOperatorAccess(_operatorAccess);
         SelectedLanguage = _localizer.Language;
         ApplyLanguage();
         foreach (var row in _allOrders)
@@ -529,7 +595,9 @@ public sealed partial class MainViewModel : ObservableObject
         var statusMatches = SelectedStatusFilter == AllStatuses
             || string.Equals(row.Status.ToString(), SelectedStatusFilter, StringComparison.Ordinal);
         var searchMatches = string.IsNullOrWhiteSpace(SearchText)
-            || row.OrderNumber.Contains(SearchText.Trim(), StringComparison.OrdinalIgnoreCase);
+            || row.OrderNumber.Contains(SearchText.Trim(), StringComparison.OrdinalIgnoreCase)
+            || row.PieceNumber.Contains(SearchText.Trim(), StringComparison.OrdinalIgnoreCase)
+            || row.HeatNumber.Contains(SearchText.Trim(), StringComparison.OrdinalIgnoreCase);
         var heatMatches = HeatFilter is null || row.HeatNumber == HeatFilter;
         return statusMatches && searchMatches && heatMatches;
     }

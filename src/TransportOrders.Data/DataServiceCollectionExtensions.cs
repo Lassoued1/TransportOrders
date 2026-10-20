@@ -13,6 +13,8 @@ public static class DataServiceCollectionExtensions
         services.AddDbContextFactory<AppDbContext>(
             options => options.UseSqlite($"Data Source={databasePath};Default Timeout=5"));
         services.AddSingleton<IOrderRepository, EfOrderRepository>();
+        services.AddSingleton<IAlarmRepository, EfAlarmRepository>();
+        services.AddSingleton<IRecipeRepository, EfRecipeRepository>();
         services.AddSingleton<DatabaseInitializer>();
         services.TryAddSingleton(TimeProvider.System);
         return services;

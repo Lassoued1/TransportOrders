@@ -4,7 +4,9 @@ public enum VehicleType
 {
     Forklift,
     HeavyLoadCarrier,
-    RailWagon
+    RailWagon,
+    BasketShuttle,
+    OverheadCrane
 }
 
 /// <summary>A vehicle type: its loading length in metres (what "full" is measured on) and its payload in tonnes (a hard limit).</summary>
@@ -12,6 +14,12 @@ public sealed record Vehicle(VehicleType Type, decimal LoadingLength, decimal Pa
 
 public static class Fleet
 {
+    public static IReadOnlyList<Vehicle> Extrusion { get; } =
+    [
+        new(VehicleType.BasketShuttle, 7m, 4m),
+        new(VehicleType.OverheadCrane, 14m, 8m),
+    ];
+
     /// <summary>Demo values (invented): heavy forklift, heavy-load carrier, internal rail wagon.</summary>
     public static IReadOnlyList<Vehicle> Default { get; } =
     [

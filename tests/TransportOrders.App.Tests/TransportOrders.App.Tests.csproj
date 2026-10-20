@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
@@ -22,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\TransportOrders.App\TransportOrders.App.csproj" />
     <ProjectReference Include="..\..\src\TransportOrders.Core\TransportOrders.Core.csproj" />
+    <ProjectReference Include="..\..\src\TransportOrders.Data\TransportOrders.Data.csproj" />
   </ItemGroup>
 
 </Project>

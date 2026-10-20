@@ -20,15 +20,34 @@ public sealed class DatabaseInitializer(IDbContextFactory<AppDbContext> contextF
     public const string DispatchUser = "Disposition";
     public const string QualityUser = "Qualitätssicherung";
 
+    private static async Task ImportRecipeHistoryAsync(AppDbContext context, DateTime now, CancellationToken ct)
+    {
+        var recipes = await context.Recipes.Where(r => r.Version == Guid.Empty).ToListAsync(ct);
+        foreach (var recipe in recipes) recipe.ImportLegacy(now);
+        if (recipes.Count > 0) await context.SaveChangesAsync(ct);
+    }
+
+    public async Task<DatabaseInitializationResult> InitializeSchemaOnlyAsync(CancellationToken cancellationToken = default)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        await context.Database.MigrateAsync(cancellationToken);
+        await ImportRecipeHistoryAsync(context, timeProvider.GetUtcNow().UtcDateTime, cancellationToken);
+        return new(false, null);
+    }
+
     public async Task<DatabaseInitializationResult> InitializeAsync(CancellationToken cancellationToken = default)
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
 
         var legacyBackup = await MoveLegacyDatabaseAsync(context.Database.GetDbConnection(), cancellationToken);
         await context.Database.MigrateAsync(cancellationToken);
+        await ImportRecipeHistoryAsync(context, timeProvider.GetUtcNow().UtcDateTime, cancellationToken);
 
         if (await context.Orders.AnyAsync(cancellationToken))
         {
+            await PlantModelInitializer.InitializeAsync(context, cancellationToken);
+            await EquipmentModelInitializer.InitializeAsync(context, timeProvider.GetUtcNow().UtcDateTime, cancellationToken);
+            await PlcModelInitializer.InitializeAsync(context, timeProvider.GetUtcNow().UtcDateTime, cancellationToken);
             return new DatabaseInitializationResult(false, legacyBackup);
         }
 
@@ -36,6 +55,9 @@ public sealed class DatabaseInitializer(IDbContextFactory<AppDbContext> contextF
         context.Transports.AddRange(transports);
         context.Orders.AddRange(orders);
         await context.SaveChangesAsync(cancellationToken);
+        await PlantModelInitializer.InitializeAsync(context, cancellationToken);
+        await EquipmentModelInitializer.InitializeAsync(context, timeProvider.GetUtcNow().UtcDateTime, cancellationToken);
+        await PlcModelInitializer.InitializeAsync(context, timeProvider.GetUtcNow().UtcDateTime, cancellationToken);
         return new DatabaseInitializationResult(true, legacyBackup);
     }
 
@@ -94,11 +116,9 @@ public sealed class DatabaseInitializer(IDbContextFactory<AppDbContext> contextF
     }
 
     /// <summary>
-    /// A special-steel plant over the last five hours relative to <paramref name="utcNow"/>: ingots from the melt shop
-    /// go to ESR remelting, ESR ingots to the forge, forged bars to heat treatment and ultrasonic testing.
-    /// Pieces carry their heat number and the piece they were made from. Every status is reached through the
-    /// domain rules, so history and transports are consistent. The open orders are chosen so the load planner
-    /// has full loads to propose on two routes and an urgent part load on a third.
+    /// Extrusion baskets moving from presses through aging ovens and packing to shipping.
+    /// PieceNumber is the stable loaded-basket identifier; HeatNumber is the material batch.
+    /// Every initial status is reached through the audited domain methods.
     /// </summary>
     internal static (IReadOnlyList<TransportOrder> Orders, IReadOnlyList<Transport> Transports) CreateDemoData(DateTime utcNow)
     {
@@ -106,25 +126,24 @@ public sealed class DatabaseInitializer(IDbContextFactory<AppDbContext> contextF
             .AddHours(-5);
         DateTime At(int minutes) => start.AddMinutes(minutes);
 
-        // Plant data in German, like the department names above: stations, materials and notes.
-        const string melt = "Stahlwerk", esr = "ESU-Anlage", forge = "Schmiede", heat = "Wärmebehandlung", ut = "US-Prüfung";
+        const string press1 = "PRESS-01", press2 = "PRESS-02", oven1 = "OVEN-01", oven2 = "OVEN-02", pack1 = "PACK-01", pack2 = "PACK-02", ship = "SHIP-01";
         const OrderPriority normal = OrderPriority.Normal, urgent = OrderPriority.Urgent;
 
         (string Heat, string Piece, string? Parent, string Material, int Pieces, decimal Tonnes, decimal Metres,
             string From, string To, OrderPriority Priority, int Created, int DueAfter)[] rows =
         [
-            ("H-26031", "H-26031-1", null, "1.2379 Rohblock", 1, 19.6m, 2.9m, melt, esr, normal, 0, 240),
-            ("H-26031", "H-26031-2", null, "1.2379 Rohblock", 1, 17.8m, 2.7m, melt, esr, normal, 0, 240),
-            ("H-26031", "H-26031-1A", "H-26031-1", "1.2379 Schmiedestab", 4, 12.4m, 4.2m, forge, heat, normal, 120, 300),
-            ("H-26031", "H-26031-1B", "H-26031-1", "1.2379 Schmiedestab", 3, 9.8m, 3.6m, forge, heat, normal, 130, 320),
-            ("H-26031", "H-26031-2A", "H-26031-2", "1.2379 Schmiedestab", 3, 8.6m, 2.6m, forge, heat, urgent, 140, 200),
-            ("H-26031", "H-26031-2B", "H-26031-2", "1.2379 Schmiedestab", 2, 6.3m, 1.4m, forge, heat, normal, 150, 330),
-            ("H-26044", "H-26044-1", null, "1.3343 ESU-Block", 1, 18.4m, 2.8m, esr, forge, urgent, 230, 60),
-            ("H-26044", "H-26044-2", null, "1.3343 ESU-Block", 1, 18.1m, 2.8m, esr, forge, urgent, 60, 220),
-            ("H-26052", "H-26052-1A", "H-26052-1", "1.2344 Schmiedeblock", 2, 3.1m, 1.9m, heat, ut, normal, 160, 200),
-            ("H-26052", "H-26052-1B", "H-26052-1", "1.2344 Schmiedeblock", 2, 4.2m, 1.8m, heat, ut, normal, 170, 220),
-            ("H-26052", "H-26052-1C", "H-26052-1", "1.2344 Schmiedeblock", 1, 2.4m, 1.2m, heat, ut, normal, 180, 200),
-            ("H-26058", "H-26058-1", null, "1.2344 Rohblock", 1, 16.0m, 2.6m, melt, esr, normal, 0, 240),
+            ("AL-26031", "AL-26031-K01", "AL-26031-B01", "EN AW-6060 profiles", 48, 1.2m, 6.4m, press1, oven1, normal, 0, 240),
+            ("AL-26031", "AL-26031-K02", "AL-26031-B01", "EN AW-6060 profiles", 48, 1.4m, 6.4m, press1, oven1, normal, 0, 240),
+            ("AL-26031", "AL-26031-K03", "AL-26031-B01", "EN AW-6060 profiles", 36, 1.1m, 6.4m, press1, oven2, normal, 120, 300),
+            ("AL-26031", "AL-26031-K04", "AL-26031-B01", "EN AW-6060 profiles", 36, 1.2m, 6.4m, press1, oven2, normal, 130, 320),
+            ("AL-26031", "AL-26031-K05", "AL-26031-B02", "EN AW-6060 profiles", 24, 0.9m, 6.4m, press1, oven2, urgent, 140, 200),
+            ("AL-26031", "AL-26031-K06", "AL-26031-B02", "EN AW-6060 profiles", 24, 0.8m, 6.4m, press1, oven2, normal, 150, 330),
+            ("AL-26044", "AL-26044-K01", "AL-26044-B01", "EN AW-6082 profiles", 20, 1.8m, 6.4m, press2, oven2, urgent, 230, 60),
+            ("AL-26044", "AL-26044-K02", "AL-26044-B01", "EN AW-6082 profiles", 20, 1.6m, 6.4m, oven2, pack1, urgent, 60, 220),
+            ("AL-26052", "AL-26052-K01", "AL-26052-B01", "EN AW-6063 profiles", 60, 1.3m, 6.4m, pack2, ship, normal, 160, 200),
+            ("AL-26052", "AL-26052-K02", "AL-26052-B01", "EN AW-6063 profiles", 60, 1.4m, 6.4m, press2, oven1, normal, 170, 220),
+            ("AL-26052", "AL-26052-K03", "AL-26052-B01", "EN AW-6063 profiles", 30, 0.7m, 6.4m, press2, oven1, normal, 180, 200),
+            ("AL-26058", "AL-26058-K01", "AL-26058-B01", "EN AW-6060 profiles", 24, 0.8m, 6.4m, press2, oven1, normal, 0, 240),
         ];
 
         var orders = rows.Select((r, i) => new TransportOrder(
@@ -132,18 +151,18 @@ public sealed class DatabaseInitializer(IDbContextFactory<AppDbContext> contextF
             r.From, r.To, r.Priority, At(r.Created + r.DueAfter), At(r.Created), PlanningUser)).ToList();
         TransportOrder Order(int number) => orders[number - 1];
 
-        var carrier = Fleet.Default.Single(v => v.Type == VehicleType.HeavyLoadCarrier);
+        var carrier = Fleet.Extrusion.Single(v => v.Type == VehicleType.OverheadCrane);
         var year = utcNow.Year;
 
-        // Two short, heavy ingots: the payload is used up long before the loading length.
-        var first = Transport.Dispatch($"TR-{year}-0001", carrier, [Order(1), Order(2)], DispatchUser, At(40), PartLoadReason.PayloadLimit);
+        // Two loaded baskets already delivered to the first aging oven.
+        var first = Transport.Dispatch($"TR-{year}-0001", carrier, [Order(1), Order(2)], DispatchUser, At(40));
         first.Complete([Order(1), Order(2)], DispatchUser, At(85));
 
-        // The forge was waiting for this ingot, so it left alone.
-        var second = Transport.Dispatch($"TR-{year}-0002", carrier, [Order(8)], DispatchUser, At(200), PartLoadReason.UrgentMaterial);
+        // One aged basket is currently on the shuttle to packing.
+        var second = Transport.Dispatch($"TR-{year}-0002", ExtrusionSimulator.Shuttle, [Order(8)], DispatchUser, At(200));
 
-        Order(12).TransitionTo(OrderStatus.Cancelled, PlanningUser, At(30), "Chemische Analyse außerhalb der Spezifikation");
-        Order(11).TransitionTo(OrderStatus.OnHold, QualityUser, At(210), "Härte unter Spezifikation, Nachprüfung");
+        Order(12).TransitionTo(OrderStatus.Cancelled, PlanningUser, At(30), "Auftrag storniert; Korb bleibt am Pressenauslauf");
+        Order(11).TransitionTo(OrderStatus.OnHold, QualityUser, At(210), "Oberflächenprüfung ausstehend");
 
         return (orders, [first, second]);
     }
