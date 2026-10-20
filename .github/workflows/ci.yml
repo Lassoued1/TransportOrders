@@ -21,18 +21,22 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Restore
-        run: dotnet restore TransportOrders.sln
-
-      - name: Build
-        run: dotnet build TransportOrders.sln --configuration Release --no-restore -warnaserror
-
-      - name: Test
-        run: dotnet test TransportOrders.sln --configuration Release --no-build --logger trx --results-directory TestResults
+      - name: Verify and package release
+        shell: pwsh
+        run: ./scripts/Build-Release.ps1
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: test-results
-          path: TestResults/*.trx
+          path: artifacts/releases/**/TestResults/*.trx
+
+      - name: Upload verified packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: transportorders-release
+          path: |
+            artifacts/releases/**/*.zip
+            artifacts/releases/**/manifest.json
+          if-no-files-found: error

@@ -2,6 +2,14 @@
 
 Assessment date: 12 October 2026. Scope: the current local source tree and the deployed `recipes-api` service. Effort estimates below are planning judgments, not measured completion percentages or delivery commitments.
 
+Release follow-up, 20 October 2026: implementation source and tests are now tracked
+in Git; only generated `output/` files were untracked when this work began.
+The [release build procedure](release-baseline.en.md) now provides a shared local/CI
+verification and packaging script with revision metadata and package checksums.
+The untracked-source findings below describe the earlier assessment. Remote CI
+and clean-checkout release acceptance still require a successful run of the
+updated workflow on the committed revision.
+
 ## Current state
 
 TransportOrders has a working aluminium-extrusion simulation: physical baskets, locations and reservations; scheduling; oven phases and versioned recipes; packaging and quality; package shipping and empty-basket reuse; durable simulated PLC exchanges; alarms; operator roles; traceability; backups and crash recovery. The Windows service runs independently of WPF. WPF uses authenticated API reads and commands. EN/DE interfaces, EN/DE/FR documentation and a German guided demo video are available.

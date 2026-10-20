@@ -1,5 +1,7 @@
 # TransportOrders
 
+**Release build:** [repeatable verification and API/client packaging](docs/release-baseline.en.md).
+
 **Documentation:** [technical reference and user manuals in English, German and French](docs/handbook/README.md), with maintained Markdown and printable PDFs.
 
 **Simulation oven recipes:** [operator workflow and upgrade guide](docs/oven-recipes.fr.md). Supervisors create and validate versioned drafts; running oven cycles retain the original parameters and revision. Latest packages: `artifacts/recipes-api` and `artifacts/recipes-client`.
