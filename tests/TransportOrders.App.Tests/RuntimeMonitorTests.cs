@@ -29,6 +29,13 @@ public class RuntimeMonitorTests
         Assert.Equal(expected, (await monitor.ReadAsync()).State);
     }
     [Fact]
+    public async Task Paused_service_is_distinct_from_stopped_service()
+    {
+        using var client = new HttpClient(new ReplyHandler(new(true, true, null, null, "C:\\plant\\extrusion.db", true)));
+        using var monitor = new RuntimeMonitor("C:\\plant\\extrusion.db", client);
+        Assert.Equal("Paused", (await monitor.ReadAsync()).State);
+    }
+    [Fact]
     public async Task Offline_endpoint_is_unavailable_rather_than_asserted_stopped()
     {
         using var client = new HttpClient(new ReplyHandler(null));

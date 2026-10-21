@@ -39,7 +39,7 @@ public sealed partial class ExtrusionViewModel : ObservableObject
         if (!Allows(PlantPermissions.Simulation)) IsRunning = false;
         foreach (var command in new CommunityToolkit.Mvvm.Input.IRelayCommand[] { StepCommand, ToggleRunCommand,
             ToggleFaultCommand, ApplyControlCommand, InspectPackageCommand, ReloadBasketCommand, SetPlcSettingsCommand,
-            RetryPlcCommand, ConfirmManualPlcCommand }) command.NotifyCanExecuteChanged();
+            RetryPlcCommand, ConfirmManualPlcCommand, ToggleCentralRuntimeCommand }) command.NotifyCanExecuteChanged();
     }
 
     public ExtrusionViewModel(ExtrusionSimulator simulator, Func<Task<SimulationResult>> step,
@@ -57,6 +57,7 @@ public sealed partial class ExtrusionViewModel : ObservableObject
         {
             Refresh(_state);
             if (_serviceState is not null) SetServiceStatus(_serviceState, _serviceDetail);
+            OnPropertyChanged(nameof(CentralRuntimeLabel));
         };
     }
 
@@ -79,6 +80,7 @@ public sealed partial class ExtrusionViewModel : ObservableObject
     private bool _isRunning;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ToggleCentralRuntimeCommand))]
     [NotifyCanExecuteChangedFor(nameof(StepCommand), nameof(ReloadControlsCommand), nameof(ToggleRunCommand), nameof(ToggleFaultCommand), nameof(ApplyControlCommand), nameof(InspectPackageCommand), nameof(ReloadBasketCommand), nameof(SetPlcSettingsCommand), nameof(RetryPlcCommand), nameof(ConfirmManualPlcCommand))]
     [NotifyPropertyChangedFor(nameof(CanEditOrders))]
     private bool _isBusy;
@@ -103,6 +105,7 @@ public sealed partial class ExtrusionViewModel : ObservableObject
     {
         _qualityDraftVersion = null; _basketDraftVersion = null;
         InspectionReason = string.Empty; ClearPlcDraft();
+        RuntimeReason = string.Empty;
     }
 
     public bool CanEditOrders => !IsRunning && !IsBusy;
@@ -117,7 +120,8 @@ public sealed partial class ExtrusionViewModel : ObservableObject
                 : $"{_localizer[$"Plant_EquipmentStatus_{equipment.Status}"]} · {_localizer[$"Plant_Mode_{equipment.Mode}"]}";
         }
     }
-    private bool CanStep() => !IsBusy && Allows(PlantPermissions.Simulation);
+    private bool CanStep() => !IsBusy && Allows(PlantPermissions.Simulation)
+        && _runtime is not { Enabled: true, Running: true } && _runtime?.Paused != true;
     private bool CanRefresh() => !IsBusy;
     private bool CanFault() => !IsBusy && Allows(PlantPermissions.Equipment);
     private bool CanApplyControl() => !IsBusy && Allows(PlantPermissions.Equipment) && SelectedEquipment is not null;

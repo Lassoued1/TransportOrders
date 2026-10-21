@@ -5,7 +5,7 @@ using System.IO;
 namespace TransportOrders.App.Services;
 
 public sealed record RuntimeSnapshot(bool Enabled, bool Running, DateTime? LastTickUtc,
-    string? LastError, string DatabasePath);
+    string? LastError, string DatabasePath, bool Paused = false);
 
 public sealed class RuntimeMonitor(string databasePath, HttpClient? client = null) : IDisposable
 {
@@ -20,7 +20,7 @@ public sealed class RuntimeMonitor(string databasePath, HttpClient? client = nul
             if (!string.Equals(Path.GetFullPath(status.DatabasePath), Path.GetFullPath(databasePath), StringComparison.OrdinalIgnoreCase))
                 return ("DifferentDatabase", "");
             if (!string.IsNullOrEmpty(status.LastError)) return ("Error", status.LastError);
-            return (!status.Enabled || !status.Running ? "Stopped" : "Running",
+            return (!status.Enabled || !status.Running ? "Stopped" : status.Paused ? "Paused" : "Running",
                 status.LastTickUtc?.ToLocalTime().ToString("HH:mm:ss") ?? "");
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)

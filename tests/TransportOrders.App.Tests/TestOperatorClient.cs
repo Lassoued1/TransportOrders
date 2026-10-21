@@ -45,4 +45,5 @@ internal sealed class TestOperatorClient(IOrderRepository repository, TimeProvid
         await repository.SaveTransportAsync(current, members);
     }
     public Task<SimulationResult> StepAsync() => _service.StepAsync();
+    public Task SetRuntimeAsync(Guid version, bool paused, string reason) => throw new NotSupportedException();
 }

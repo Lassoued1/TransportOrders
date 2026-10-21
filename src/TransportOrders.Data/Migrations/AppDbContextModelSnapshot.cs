@@ -795,6 +795,62 @@ namespace TransportOrders.Data.Migrations
                     b.ToTable("RecipeEvents", (string)null);
                 });
 
+            modelBuilder.Entity("TransportOrders.Core.RuntimeControlEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Actor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("AtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Paused")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("Version")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AtUtc");
+
+                    b.ToTable("RuntimeControlEvents", (string)null);
+                });
+
+            modelBuilder.Entity("TransportOrders.Core.RuntimeControlState", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Paused")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("RuntimeControl", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Paused = false,
+                            Version = new Guid("a721ab3c-5384-48c6-b00e-a6db4a859d2e")
+                        });
+                });
+
             modelBuilder.Entity("TransportOrders.Core.StatusChange", b =>
                 {
                     b.Property<int>("Id")

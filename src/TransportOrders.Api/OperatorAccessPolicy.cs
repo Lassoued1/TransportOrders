@@ -52,7 +52,7 @@ public sealed class OperatorAccessPolicy
                 if (_equipment.Contains(user.Identity.Name ?? "", StringComparer.OrdinalIgnoreCase))
                 { roles.Add("LegacyEquipment"); permissions.Add(PlantPermissions.Equipment); }
                 if (_operators.Contains(user.Identity.Name ?? "", StringComparer.OrdinalIgnoreCase))
-                { roles.Add("LegacyOperator"); permissions.UnionWith(PlantPermissions.All.Where(p => p != PlantPermissions.Equipment)); }
+                { roles.Add("LegacyOperator"); permissions.UnionWith(PlantPermissions.All.Where(p => p != PlantPermissions.Equipment && p != PlantPermissions.Runtime)); }
             }
         }
         return new(user.Identity?.Name ?? "", roles.Order().ToArray(), permissions.Order().ToArray(), databasePath);

@@ -6,6 +6,8 @@ namespace TransportOrders.Data;
 
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    public DbSet<RuntimeControlState> RuntimeControl => Set<RuntimeControlState>();
+    public DbSet<RuntimeControlEvent> RuntimeControlEvents => Set<RuntimeControlEvent>();
     public DbSet<TransportOrder> Orders => Set<TransportOrder>();
     public DbSet<PlantAlarm> Alarms => Set<PlantAlarm>();
 
@@ -25,6 +27,18 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<RuntimeControlState>(state =>
+        {
+            state.ToTable("RuntimeControl"); state.HasKey(s => s.Id);
+            state.Property(s => s.Version).IsConcurrencyToken();
+            state.HasData(new RuntimeControlState());
+        });
+        modelBuilder.Entity<RuntimeControlEvent>(entry =>
+        {
+            entry.ToTable("RuntimeControlEvents"); entry.HasKey(e => e.Id);
+            entry.Property(e => e.AtUtc).HasConversion(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+            entry.HasIndex(e => e.AtUtc);
+        });
         modelBuilder.Entity<PlantAlarm>(alarm =>
         {
             alarm.ToTable("PlantAlarms"); alarm.HasKey(a => a.Id);

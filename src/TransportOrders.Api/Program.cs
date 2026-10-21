@@ -142,10 +142,13 @@ app.MapHealthChecks("/health").AllowAnonymous();
 app.MapGet("/api/backups/status", (IServiceProvider services) => backupEnabled
     ? services.GetRequiredService<PlantBackupWorker>().Status : new PlantBackupStatus(false, null, null, null));
 app.MapGet("/api/client-state", async (HttpContext http, IOrderRepository repository, TimeProvider clock,
-    PlantRuntimeStatus runtime, PlantTimeZone timeZone, IAlarmRepository alarms, CancellationToken ct) =>
-    new PlantClientSnapshot(1, plantIdentity.Id, plantIdentity.Name, timeZone.Zone.Id, clock.GetUtcNow().UtcDateTime,
+    PlantRuntimeStatus runtime, PlantTimeZone timeZone, IAlarmRepository alarms, IRuntimeControlRepository controls, CancellationToken ct) =>
+{
+    var control = await controls.ReadAsync(ct);
+    return new PlantClientSnapshot(1, plantIdentity.Id, plantIdentity.Name, timeZone.Zone.Id, clock.GetUtcNow().UtcDateTime,
         PlantStateSnapshot.From(await repository.GetPlantStateAsync(ct)), DescribeAccess(http, ""),
-        new(runtimeEnabled, runtime.Running, runtime.LastTickUtc, runtime.LastError), await alarms.ReadAsync(ct), operatingMode)).RequireAuthorization();
+        new(runtimeEnabled, runtime.Running, runtime.LastTickUtc, runtime.LastError, control.Paused, control.Version), await alarms.ReadAsync(ct), operatingMode);
+}).RequireAuthorization();
 app.MapPost("/api/alarms/{id:guid}/acknowledge", async (Guid id, AlarmAcknowledgementRequest command, HttpContext http,
     IAlarmRepository alarms, PlantOperationGate gate, TimeProvider clock, CancellationToken ct) =>
 {
@@ -161,13 +164,17 @@ app.MapPost("/api/alarms/{id:guid}/acknowledge", async (Guid id, AlarmAcknowledg
     catch (Exception ex) when (ex is TransportRuleException or Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
     { return Results.Conflict(); }
 }).RequireAuthorization(PlantPermissions.Equipment);
-app.MapGet("/api/runtime", (PlantRuntimeStatus status) => new
+app.MapGet("/api/runtime", async (PlantRuntimeStatus status, IRuntimeControlRepository controls, CancellationToken ct) =>
 {
+    var control = await controls.ReadAsync(ct);
+    return new {
     Enabled = runtimeEnabled, status.Running, status.LastTickUtc, status.LastAction, status.LastError,
+    control.Paused, control.Version,
     DatabasePath = databasePath,
     PlantId = plantIdentity.Id,
-    Mode = "Persistent demo PLC; simulated oven and quality operations"
+    Mode = "Persistent demo PLC; simulated oven and quality operations" };
 });
+app.MapRuntimeControls(runtimeEnabled);
 app.MapOrderEndpoints();
 app.MapRecipeEndpoints(access);
 app.MapGet("/api/access", (HttpContext http) => DescribeAccess(http, databasePath)).RequireAuthorization();

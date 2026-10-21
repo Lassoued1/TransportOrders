@@ -95,8 +95,9 @@ public partial class App : Application
             if (snapshot is not null) viewModel.SetPlantTimeZone(snapshot.TimeZoneId);
             viewModel.SetOperatorAccess(snapshot?.Access);
             var runtime = snapshot?.Runtime;
+            viewModel.Extrusion?.SetRuntimeState(runtime);
             viewModel.Extrusion?.SetServiceStatus(runtime is null ? "Unavailable"
-                : runtime.LastError is not null ? "Error" : runtime.Enabled && runtime.Running ? "Running" : "Stopped",
+                : runtime.LastError is not null ? "Error" : !runtime.Enabled || !runtime.Running ? "Stopped" : runtime.Paused ? "Paused" : "Running",
                 runtime?.LastError ?? runtime?.LastTickUtc?.ToLocalTime().ToString("HH:mm:ss") ?? "");
         });
         await viewModel.LoadAsync();

@@ -41,7 +41,8 @@ public class OperatorRoleApiTests(RoleApiFactory factory) : IClassFixture<RoleAp
             ("/api/orders/TO/state", OrderStatus.OnHold, ["Quality"]),
             ("/api/orders/TO/state", OrderStatus.Planned, ["Quality"]),
             ("/api/orders/TO/state", OrderStatus.Cancelled, ["Logistics"]),
-            ("/api/simulation/step", null, [])
+            ("/api/simulation/step", null, []),
+            ("/api/runtime/control", null, [])
         };
         foreach (var route in routes)
             foreach (var role in new[] { "Quality", "Logistics", "Maintenance", "Supervisor" })
@@ -56,7 +57,7 @@ public class OperatorRoleApiTests(RoleApiFactory factory) : IClassFixture<RoleAp
         Assert.Equal(allowed ? HttpStatusCode.BadRequest : HttpStatusCode.Forbidden, response.StatusCode);
     }
     [Theory]
-    [InlineData("Quality", 2)][InlineData("Logistics", 4)][InlineData("Maintenance", 2)][InlineData("Supervisor", 9)]
+    [InlineData("Quality", 2)][InlineData("Logistics", 4)][InlineData("Maintenance", 2)][InlineData("Supervisor", 10)]
     public async Task Access_endpoint_reports_only_the_authenticated_accounts_effective_permissions(string role, int count)
     {
         using var client = factory.CreateClient(); client.DefaultRequestHeaders.Add("Test-User", $"PLANT\\{role}");
@@ -77,7 +78,7 @@ public class OperatorRoleApiTests(RoleApiFactory factory) : IClassFixture<RoleAp
         using var client = factory.CreateClient(); client.DefaultRequestHeaders.Add("Test-User", "PLANT\\GroupUser");
         client.DefaultRequestHeaders.Add("Test-Groups", "PLANT\\Leads");
         var access = await client.GetFromJsonAsync<OperatorAccessSnapshot>("/api/access");
-        Assert.Contains("Supervisor", access!.Roles); Assert.Equal(9, access.Permissions.Count);
+        Assert.Contains("Supervisor", access!.Roles); Assert.Equal(10, access.Permissions.Count);
         using var anonymous = factory.CreateClient();
         Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/api/access")).StatusCode);
     }

@@ -21,6 +21,8 @@ dotnet run --project src/TransportOrders.Api -- --Runtime:Enabled=true --urls=ht
 ```
 
 Keep this process running to continue PLC polling and simulated production after closing WPF.
+Supervisors can [pause/resume the central simulation](docs/runtime-controls.en.md)
+from Plant overview; the pause survives service restarts and is audited.
 `/api/runtime` reports its state. Automatic scheduling has one owner per database;
 WPF refreshes the shared state while the service owns it. See the [central service guide](docs/central-service.fr.md)
 for restart behavior and the current local, simulated scope.
@@ -45,6 +47,8 @@ order. This is an independent learning project inspired by publicly described MC
 2. Click **Next step** to acknowledge the initial shuttle arrival, then complete processing and dispatch
    subsequent legs. Ovens run heating, holding and cooling before baskets can leave.
    **Run demo** advances one event every two seconds; an oven event adds one simulated minute.
+   When the central runtime is active, it advances the scenario itself and the desktop
+   step/run buttons are disabled. Use the Supervisor central pause/resume control instead.
 3. Inject a **Shuttle fault** during a transfer. The destination remains reserved until recovery.
 4. Pause and open **Orders & traceability** to inspect history or release the basket on quality hold.
 5. Resume: ten checked packages reach shipping and ten empty baskets return to the presses;

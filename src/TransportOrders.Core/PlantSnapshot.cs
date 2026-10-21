@@ -25,7 +25,8 @@ public sealed record PlantStateSnapshot(
         PlcSimulation = PlcSimulation is null ? null : PlcSimulationSettings.FromSnapshot(PlcSimulation)
     };
 }
-public sealed record ClientRuntimeState(bool Enabled, bool Running, DateTime? LastTickUtc, string? LastError);
+public sealed record ClientRuntimeState(bool Enabled, bool Running, DateTime? LastTickUtc, string? LastError,
+    bool Paused = false, Guid Version = default);
 public sealed record PlantClientSnapshot(int ContractVersion, string PlantId, string Name, string TimeZoneId,
     DateTime CapturedAtUtc, PlantStateSnapshot State, OperatorAccessSnapshot Access, ClientRuntimeState Runtime,
     IReadOnlyList<PlantAlarmSnapshot>? Alarms = null, string OperatingMode = "Demo");

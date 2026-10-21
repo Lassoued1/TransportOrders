@@ -30,6 +30,12 @@
                     <TextBlock Text="{svc:Tr Plant_Title}" FontSize="24" FontWeight="SemiBold" />
                     <TextBlock Text="{svc:Tr Plant_Subtitle}" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,5,0,0" />
                     <TextBlock Text="{Binding ServiceStatus}" TextWrapping="Wrap" Margin="0,6,0,0" FontWeight="SemiBold" />
+                    <TextBlock Text="{svc:Tr Runtime_Hint}" TextWrapping="Wrap" Margin="0,8,0,0" />
+                    <WrapPanel Margin="0,4,0,0">
+                        <TextBox Text="{Binding RuntimeReason, UpdateSourceTrigger=PropertyChanged}" Width="200" MaxLength="1000"
+                                 ToolTip="{svc:Tr Runtime_Reason}" AutomationProperties.Name="{svc:Tr Runtime_Reason}" />
+                        <Button Content="{Binding CentralRuntimeLabel}" Command="{Binding ToggleCentralRuntimeCommand}" Margin="8,0,0,0" />
+                    </WrapPanel>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Content="{Binding RunLabel}" Command="{Binding ToggleRunCommand}" Style="{StaticResource PrimaryButton}" />

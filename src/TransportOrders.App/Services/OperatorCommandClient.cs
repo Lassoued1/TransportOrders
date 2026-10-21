@@ -19,6 +19,7 @@ public interface IOperatorCommandClient
     Task<string> DispatchAsync(LoadProposal proposal, PartLoadReason? reason);
     Task ConfirmTransportAsync(string number, IReadOnlyList<TransportOrder> orders, string reason);
     Task<SimulationResult> StepAsync();
+    Task SetRuntimeAsync(Guid version, bool paused, string reason);
 }
 
 public sealed class OperatorCommandClient(string databasePath, ILocalizer localizer, HttpClient? client = null, PlantConnection? connection = null)
@@ -71,5 +72,7 @@ public sealed class OperatorCommandClient(string databasePath, ILocalizer locali
         _ = await Send<OperatorCommandResult>($"/api/transports/{Segment(number)}/manual-arrival",
             new TransportArrivalCommand(orders.Select(OrderReference.From).ToArray(), reason, _database, connection?.RequirePlantId()));
     public Task<SimulationResult> StepAsync() => Send<SimulationResult>("/api/simulation/step", new DemoStepCommand(_database, connection?.RequirePlantId()));
+    public async Task SetRuntimeAsync(Guid version, bool paused, string reason) =>
+        _ = await Send<RuntimeControlState>("/api/runtime/control", new RuntimeControlCommand(version, paused, reason, _database, connection?.RequirePlantId()));
     public void Dispose() { if (client is null) _client.Dispose(); }
 }

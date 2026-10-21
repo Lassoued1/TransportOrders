@@ -447,4 +447,9 @@ Die bisherige Datei wurde gesichert unter:
   <data name="Recipe_Revision" xml:space="preserve"><value>Revision</value></data>
   <data name="Recipe_Reason" xml:space="preserve"><value>Änderungs- / Validierungsgrund</value></data>
   <data name="Recipe_Event_Created" xml:space="preserve"><value>Erstellt</value></data>
+  <data name="Service_Paused" xml:space="preserve"><value>Zentraler Dienst: Simulation pausiert</value></data>
+  <data name="Runtime_Pause" xml:space="preserve"><value>Zentrale Simulation pausieren</value></data>
+  <data name="Runtime_Resume" xml:space="preserve"><value>Zentrale Simulation fortsetzen</value></data>
+  <data name="Runtime_Reason" xml:space="preserve"><value>Grund für zentrale Pause oder Fortsetzung</value></data>
+  <data name="Runtime_Hint" xml:space="preserve"><value>Supervisor: Grund eingeben, um die automatische Simulation für alle Arbeitsplätze zu pausieren oder fortzusetzen.</value></data>
 </root>

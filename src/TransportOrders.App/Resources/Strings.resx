@@ -447,4 +447,9 @@ The previous file was kept as:
   <data name="Recipe_Revision" xml:space="preserve"><value>Revision</value></data>
   <data name="Recipe_Reason" xml:space="preserve"><value>Change / validation reason</value></data>
   <data name="Recipe_Event_Created" xml:space="preserve"><value>Created</value></data>
+  <data name="Service_Paused" xml:space="preserve"><value>Central service: simulation paused</value></data>
+  <data name="Runtime_Pause" xml:space="preserve"><value>Pause central simulation</value></data>
+  <data name="Runtime_Resume" xml:space="preserve"><value>Resume central simulation</value></data>
+  <data name="Runtime_Reason" xml:space="preserve"><value>Reason for central pause or resume</value></data>
+  <data name="Runtime_Hint" xml:space="preserve"><value>Supervisor: enter a reason to pause or resume automatic simulation for all workstations.</value></data>
 </root>

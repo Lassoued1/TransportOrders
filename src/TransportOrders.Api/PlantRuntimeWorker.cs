@@ -33,8 +33,11 @@ public sealed class PlantRuntimeWorker(PlantRuntime runtime, PlantDriverLease le
                 try
                 {
                     var result = await runtime.TickAsync(stoppingToken);
-                    status.LastTickUtc = DateTime.UtcNow;
-                    status.LastAction = result.Action.ToString();
+                    if (result.Action != SimulationAction.CentralService)
+                    {
+                        status.LastTickUtc = DateTime.UtcNow;
+                        status.LastAction = result.Action.ToString();
+                    }
                     status.LastError = null;
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }

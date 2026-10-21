@@ -11,6 +11,7 @@ public static class PlantPermissions
     public const string Arrival = "transport.manual-arrival";
     public const string Plc = "plc.operator";
     public const string Simulation = "simulation.step";
-    public static IReadOnlyList<string> All { get; } = [Equipment, Quality, Basket, OrderQuality, OrderCancel, Dispatch, Arrival, Plc, Simulation];
+    public const string Runtime = "simulation.runtime";
+    public static IReadOnlyList<string> All { get; } = [Equipment, Quality, Basket, OrderQuality, OrderCancel, Dispatch, Arrival, Plc, Simulation, Runtime];
 }
 public sealed record OperatorAccessSnapshot(string User, IReadOnlyList<string> Roles, IReadOnlyList<string> Permissions, string DatabasePath);

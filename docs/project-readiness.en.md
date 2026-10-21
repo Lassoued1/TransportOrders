@@ -10,6 +10,12 @@ The untracked-source findings below describe the earlier assessment. Remote CI
 and clean-checkout release acceptance still require a successful run of the
 updated workflow on the committed revision.
 
+Central simulation pause/resume is now implemented in Plant overview, with
+Supervisor authorization, reasons, version conflicts, persisted restart behavior
+and an audit history. See [runtime controls](runtime-controls.en.md). Isolated
+scenario selection/reset remains future work; the earlier missing-controls
+finding below now applies only to that remaining part.
+
 ## Current state
 
 TransportOrders has a working aluminium-extrusion simulation: physical baskets, locations and reservations; scheduling; oven phases and versioned recipes; packaging and quality; package shipping and empty-basket reuse; durable simulated PLC exchanges; alarms; operator roles; traceability; backups and crash recovery. The Windows service runs independently of WPF. WPF uses authenticated API reads and commands. EN/DE interfaces, EN/DE/FR documentation and a German guided demo video are available.

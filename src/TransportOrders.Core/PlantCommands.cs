@@ -43,7 +43,8 @@ public sealed class PlantOperationGate
     }
 }
 
-public sealed class PlantCommandService(IOrderRepository repository, TimeProvider clock, PlantOperationGate gate)
+public sealed class PlantCommandService(IOrderRepository repository, TimeProvider clock, PlantOperationGate gate,
+    IRuntimeControlRepository? runtimeControls = null)
 {
     private DateTime Now => clock.GetUtcNow().UtcDateTime;
     private IPlcRepository Plc => repository as IPlcRepository ?? throw new TransportRuleException("PLC persistence is unavailable.");
@@ -140,7 +141,9 @@ public sealed class PlantCommandService(IOrderRepository repository, TimeProvide
                 throw new TransportRuleException("Equipment must be restored before confirming arrival.");
         }, ct);
     public Task<SimulationResult> StepAsync(CancellationToken ct = default) =>
-        gate.RunAsync(() => new ExtrusionSimulator(repository, clock).StepAsync(ct), ct);
+        gate.RunAsync(async () => runtimeControls is not null && (await runtimeControls.ReadAsync(ct)).Paused
+            ? new SimulationResult(SimulationAction.CentralService)
+            : await new ExtrusionSimulator(repository, clock).StepAsync(ct), ct);
     private static void Fresh(TransportOrder order, string revision)
     {
         if (string.IsNullOrWhiteSpace(revision)) throw new ArgumentException("Order revision is required.");
